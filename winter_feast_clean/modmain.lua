@@ -102,7 +102,7 @@ local halloweencandy =					--万圣节糖果
 	"halloweencandy_13",				
 	"halloweencandy_14"				
 }
-local sketch = 
+local sketch =                          -- Boss 图纸
 {
 	"chesspiece_moosegoose_sketch",
 	"chesspiece_dragonfly_sketch",
@@ -117,6 +117,14 @@ local sketch =
 	"chesspiece_stalker_sketch",
 	"chesspiece_toadstool_sketch",
 	"oceanfishingbobber_goose_tacklesketch"
+}
+local myth_toy =                          -- 神话书说玩具
+{
+	"myth_toy_chineseknot",
+	"myth_toy_featherbundle",
+	"myth_toy_tigerdoll",
+	"myth_toy_tumbler",
+	"myth_toy_twirldrum"
 }
 
 local function GetCleanList()
@@ -167,7 +175,9 @@ local function GetCleanList()
 	if GetModConfigData("sketch") then
 		AddCleanList(sketch)		
 	end
-
+	if GetModConfigData("myth_toy") then
+		AddCleanList(myth_toy)
+	end
 	return cleanList
 end
 

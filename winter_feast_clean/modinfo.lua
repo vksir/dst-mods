@@ -1,7 +1,7 @@
 name = "Winter Feast Clean"
 description = "To clean winter feast items and halloween items.\n拥有可配置清理列表。可清理冬季盛宴杂物，及万圣节杂物。"
 author = "Villkiss"
-version = "1.1.3"
+version = "1.1.4"
 forumthread = ""
 api_version = 10
 icon_atlas = "modicon.xml"
@@ -132,9 +132,16 @@ configuration_options =
     },
     {
         name = "sketch",
-        label = "Boss Sketch(Boss 雕像图纸))",
+        label = "Boss Sketch(Boss 雕像图纸)",
         hover = "Whether to clean boss sketch?\n是否清理 Boss 雕像图纸？",
         options = toggle,
         default = true
+    },
+    {
+        name = "myth_toy",
+        label = "Myth Toy(神话书说玩具)",
+        hover = "Whether to clean myth toy?\n是否清理神话书说玩具？",
+        options = toggle,
+        default = false
     }
 }
