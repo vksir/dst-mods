@@ -1,7 +1,7 @@
 name = "Winter Feast Clean"
 description = "To clean winter feast items and halloween items.\n拥有可配置清理列表。可清理冬季盛宴杂物，及万圣节杂物。"
 author = "Villkiss"
-version = "1.1.4"
+version = "1.1.5"
 forumthread = ""
 api_version = 10
 icon_atlas = "modicon.xml"
@@ -19,7 +19,7 @@ local toggle = {{description = "Yes", data = true}, {description = "No", data = 
 
 configuration_options =
 {
-	{ name = "", label = "General Settings", options = none, default = false },
+	{ name = "", label = "General Settings(常规设置)", options = none, default = false },
     {
         name = "lang",
         label = "Language(语言)",
@@ -44,8 +44,28 @@ configuration_options =
         },
         default = 5
     },
-
-    { name = "", label = "Clean List", options = none, default = false },
+    { name = "", label = "Basic Resources(基础资源)", options = none, default = false },
+    {
+        name = "twigs",
+        label = "Twigs(树枝)",
+        hover = "Whether to clean twigs?\n是否清理树枝？",
+        options = toggle,
+        default = false
+    },
+    {
+        name = "silk",
+        label = "Silk(蜘蛛网)",
+        hover = "Whether to clean silk?\n是否清理蜘蛛网？",
+        options = toggle,
+        default = false
+    },
+    {
+        name = "spidergland",
+        label = "Spidergland(蜘蛛腺)",
+        hover = "Whether to clean spidergland?\n是否清理蜘蛛腺？",
+        options = toggle,
+        default = true
+    },
     {
         name = "houndstooth",
         label = "Houndstooth(狗牙)",
@@ -89,6 +109,14 @@ configuration_options =
         default = false
     },
     {
+        name = "sketch",
+        label = "Boss Sketch(Boss 雕像图纸)",
+        hover = "Whether to clean boss sketch?\n是否清理 Boss 雕像图纸？",
+        options = toggle,
+        default = true
+    },
+    { name = "", label = "Special Event Resources(节日资源)", options = none, default = false },
+    {
         name = "winter_ornament",
         label = "Winter ornament(节日挂饰)",
         hover = "Whether to clean winter ornament?\n是否清理节日挂饰？",
@@ -130,13 +158,7 @@ configuration_options =
         options = toggle,
         default = true
     },
-    {
-        name = "sketch",
-        label = "Boss Sketch(Boss 雕像图纸)",
-        hover = "Whether to clean boss sketch?\n是否清理 Boss 雕像图纸？",
-        options = toggle,
-        default = true
-    },
+    { name = "", label = "Mods Resources(Mod 资源)", options = none, default = false },
     {
         name = "myth_toy",
         label = "Myth Toy(神话书说玩具)",

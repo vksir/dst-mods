@@ -8,6 +8,9 @@ local guano = {"guano"}					--鸟屎
 local poop = {"poop"}					--便便
 local spoiled_food = {"spoiled_food"}	--腐烂食物
 local rottenegg = {"rottenegg"}			--腐烂鸡蛋
+local twigs = {"twigs"}			        --树枝
+local silk = {"silk"}			        --蜘蛛网
+local spidergland = {"spidergland"}		--蜘蛛腺
 local winter_ornament =					--节日挂饰
 {
 	"winter_ornament_fancy1",			--节日挂饰
@@ -177,6 +180,15 @@ local function GetCleanList()
 	end
 	if GetModConfigData("myth_toy") then
 		AddCleanList(myth_toy)
+	end
+	if GetModConfigData("twigs") then
+		AddCleanList(twigs)
+	end
+	if GetModConfigData("silk") then
+		AddCleanList(silk)
+	end
+	if GetModConfigData("spidergland") then
+		AddCleanList(spidergland)
 	end
 	return cleanList
 end
