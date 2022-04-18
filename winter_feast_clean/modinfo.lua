@@ -1,7 +1,7 @@
 name = "Winter Feast Clean"
 description = "To clean winter feast items and halloween items.\n拥有可配置清理列表。可清理冬季盛宴杂物，及万圣节杂物。"
 author = "Villkiss"
-version = "1.1.5"
+version = "1.1.6"
 forumthread = ""
 api_version = 10
 icon_atlas = "modicon.xml"
@@ -155,6 +155,13 @@ configuration_options =
         name = "halloweencandy",
         label = "Halloweencandy(万圣节糖果)",
         hover = "Whether to clean halloweencandy?\n是否清理万圣节糖果？",
+        options = toggle,
+        default = true
+    },
+    {
+        name = "lucky_goldnugget",
+        label = "Lucky goldnugget(幸运黄金)",
+        hover = "Whether to clean lucky goldnugget?\n是否清理幸运黄金？",
         options = toggle,
         default = true
     },

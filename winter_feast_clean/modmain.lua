@@ -105,6 +105,7 @@ local halloweencandy =					--万圣节糖果
 	"halloweencandy_13",				
 	"halloweencandy_14"				
 }
+local lucky_goldnugget = {"lucky_goldnugget"}   -- 幸运黄金
 local sketch =                          -- Boss 图纸
 {
 	"chesspiece_moosegoose_sketch",
@@ -189,6 +190,9 @@ local function GetCleanList()
 	end
 	if GetModConfigData("spidergland") then
 		AddCleanList(spidergland)
+	end
+	if GetModConfigData("lucky_goldnugget") then
+		AddCleanList(lucky_goldnugget)
 	end
 	return cleanList
 end
