@@ -1,0 +1,11 @@
+Modified from dani's Save Equipment Slots. Original mod: https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686.
+
+修改自 dani 的 Save Equipment Slots，原 mod：https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686。
+
+[b]Changes:[/b]
+1. Slot configurations no longer get lost when reloading the game or entering/exiting caves.
+2. Minor adjustments to the default configuration. In particular, the default toggle shortcut has been changed to Ctrl + V.
+
+[b]改动说明：[/b]
+1、槽位配置重上游戏、上下洞穴不再丢失。
+2、些许默认配置调整。特别地，默认开关快捷键变更为 Ctrl + V。
