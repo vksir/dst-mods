@@ -122,97 +122,67 @@ inst.components.inventoryitem.imagename = "eyeturret_item"  -- 不带 .tex！走
 
 另：**modinfo 的 `icon_atlas`/`icon` 不能指向游戏内路径**（启动日志 `WARNING: icon paths ... are not valid`），必须是 mod 目录内的 tex+xml 对，需 ktech 等工具制作。
 
-## 10. 创意工坊发布（steamcmd / ModUploader）
+## 10. 创意工坊发布（只用官方 ModUploader）
 
-两条上传路线，职责不同：
+结论先行：发布统一走 `Don't Starve Mod Tools\ModUploader.exe`。
+steamcmd 的 `workshop_build_item` 试过一整套（VDF + 脚本），**已弃用**，原因见 10.1。
 
-| 路线 | 能做什么 | 不能做什么 |
-|---|---|---|
-| `steamcmd +workshop_build_item` | 更新内容、changenote | 改 tags、改版本标签 |
-| `Don't Starve Mod Tools\ModUploader.exe` | 标题/描述/tags/预览图/新建条目 | 无法脚本化、要关游戏 |
+### 10.1 为什么弃用 steamcmd
 
-### 10.1 steamcmd 的 VDF：省略即不动，写了就覆盖
+1. **写 `description` / `title` 会覆盖网页手写的文案**。VDF 里出现这两个键，这次上传就把对应字段整体替换；
+   网页上润色过的排版会被打回，只能重贴（踩过）。
+2. **VDF 不支持 `\n` 转义**。引号里写 `\n` 会原样入库，工坊页面显示字面量 `\n\n`；
+   多行文案必须写**真实换行**（KeyValues 允许引号内换行）。
+3. **`tags` 段完全无效**。`workshop_build_item` 只支持 `kvtags`（key-value 标签：页面不显示、不能按它筛选），
+   不支持普通 tags。两种写法都实测过——数组块 `"tags" { "0" "client_only_mod" }`、
+   逗号串 `"tags" "client_only_mod"`——上传均成功但条目标签一个没变（减法测试：原来的 `version:0.1.1` 没被移除）。
+4. **`version:` 标签会停滞**。只会更内容的 steamcmd 无法刷新 `version:x.y.z`。
+   玩家仍会自动下载新内容（Steam 订阅），但游戏内「mod 过期」提示不刷新，容易误判。
 
-`workshop_build_item` 只处理 VDF 里出现的键，**省略的字段不会被修改**，反之写了就整体覆盖。
+steamcmd 唯一的优势是「不用关游戏、可脚本化」，抵不过维护两套配置的成本。
+若将来确实要临时更内容，VDF 只写 4 个键（`appid` / `publishedfileid` / `contentfolder` / `changenote`），
+其余字段一律不写；否则就会命中上面第 1、2 条。
 
-所以 `publish/workshop_item.vdf` 只保留 4 个键：
+### 10.2 ModUploader 的坑
 
-```
-"workshopitem"
-{
-	"appid"				"322330"
-	"publishedfileid"	"3836742363"
-	"contentfolder"		"D:/Code/MyMods/dst-mods/save_equipment_slots_fix"
-	"changenote"		"0.1.1 描述格式修正"
-}
-```
+- **不选条目 = 新建条目**。「Mod 列表」下拉列的是账号下已发布条目，不选直接发布会生成新 ID；
+  新 ID 要记住，旧条目用工具 Delete 删掉（删掉的条目网页返回 500）。
+- **打包整个 mod 目录**（`Update Data (ALL files in directory will be uploaded)`）。
+  README、临时文件放进去就会进订阅者的下载包——所以开发文档放 `docs/`，mod 目录只留本体。
+  体积对不上时，先查目录里多了什么（本轮靠 15KB/13KB 的差值定位到 README 和 preview.jpg）。
+- **描述框没有语言选项**，写的是 `english` 槽位；且每次 Update 都会用描述框内容整体覆盖工坊描述。
+  网页上润色过的文案会被打回 → 定稿要粘进工具，或更新后回网页补。
+- **Patch Notes 留空** → 「改动说明」里出现一条无正文记录，删不掉。
+- 工具要占用 AppID 322330 的 Steam 接口，**游戏必须先关**。
 
-### 10.2 写 `description` 会冲掉网页上手工润色的文案（踩过）
-
-只要 VDF 里有 `description`（或 `title` / `previewfile` / `visibility`），这次上传就把对应字段替换成 VDF 里的值。
-网页上改好的排版、封面、可见性会被打回，且**改动说明里只留一条记录，原文案只能从历史版本/存档里找回**。
-规则：**描述只在网页维护；VDF 不写 description**。文案定稿存 `publish/workshop_description.txt`。
-
-### 10.3 VDF 不支持 `\n` 转义（踩过）
-
-VDF 字符串里写 `\n` 会被**原样入库**，工坊页面直接显示字面量 `\n\n`（满屏反斜杠）。
-KeyValues 允许引号内出现真实换行，多行文案必须写成：
-
-```
-	"description"	"第一行
-第二行"
-```
-
-校验办法见 10.6（读接口看描述里是 `0x0A` 还是 `0x5C 0x6E`）。
-
-### 10.4 `tags` 段写了无效
-
-`workshop_build_item` 支持的是 `kvtags`（key-value 标签），**不支持普通 tags**。
-实测：VDF 里写 `"tags" { "0" "client_only_mod" }`，上传成功但条目标签一个没变。
-`client_only_mod` / `version:x.y.z` 这类普通标签只能由 ModUploader 写入。
-
-### 10.5 工坊条目的数据模型
+### 10.3 工坊条目的数据模型
 
 - **标题/描述按语言分别存**（`ISteamUGC::SetItemUpdateLanguage`，不设置时默认 `english`）。
   页面按浏览者客户端语言取对应那份，**没有的语种回退 English**。
-  两种「双语」写法：一段中英并列（落 English 槽位，所有人都看得到）或每种语言一条。
+  两种双语写法：一段中英并列（落 english 槽位，所有人都看得到）或每种语言一条（中文槽位只能在网页改）。
 - **`changenote` 不分语言**，所有语言页面显示同一段文字。
-- **没有「版本号」字段**。`modinfo.version` 只在游戏内 Mods 列表显示，
-  并由 `mods.lua` 的 `IsModOutOfDate`（`TheSim:GetWorkshopVersion()`）判断工坊 mod 是否过期。
-- ModUploader 会额外打一个普通标签 **`version:<modinfo.version>`**，页面标签栏可见、`?requiredtags[]=` 可筛；
-  `GetWorkshopVersion()` 读的就是它。**steamcmd 发版不会更新它** → 只用 steamcmd 时版本标签会滞后，
-  玩家仍会自动下载新内容（Steam 订阅），但游戏内「mod 过期」提示不刷新。需要同步就再用 ModUploader Update 一次。
+- **没有「版本号」字段**。`modinfo.version` 只在游戏内 Mods 列表显示；工坊页面能看到的版本是标签 `version:x.y.z`。
+- modinfo → 标签：
 
-### 10.6 校验上传结果：用 Web API，别刷社区页
+  | modinfo | 工坊标签 |
+  |---|---|
+  | `client_only_mod = true` | `client_only_mod` |
+  | `server_only_mod = true` | `server_only_mod` |
+  | `all_clients_require_mod = true` | `all_clients_require_mod` |
+  | `*_compatible` | 各 DLC 兼容标签 |
+  | `version = "x.y.z"` | `version:x.y.z`（`TheSim:GetWorkshopVersion()` 的来源） |
 
-社区页反复抓会 429（返回 12KB 的错误壳或空壳），而且 HTML 结构随 A/B 变。直接用公开接口：
+### 10.4 校验上传结果：用 Web API，别刷社区页
+
+社区页反复抓会 429（返回 12KB 错误壳/空壳），HTML 结构也随 A/B 变。用公开接口：
 
 ```
-curl -s -X POST https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/ \
-  --data "itemcount=1&publishedfileids[0]=3836742363"
+curl -s -X POST https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/ --data "itemcount=1&publishedfileids[0]=3836742363"
 ```
 
-返回 `title` / `tags` / `description` / `time_updated`，无需登录，可用来核对：
-描述有没有被覆盖、换行是真换行还是字面量、标签有没有变。
+返回 `title` / `tags` / `description` / `time_updated`，无需登录。可用来确认：
+描述有没有被覆盖、换行是真换行还是字面量（`0x0A` vs `0x5C 0x6E`）、标签有没有变。
 
-其他验证手段：
-
-- 语言槽位：同一 ID 换 `&l=schinese` / `&l=english` / `&l=german` 对比（后者应有则显示、无则回退英文）。
+- 语言槽位：同一条目换 `&l=schinese` / `&l=english` / `&l=german` 对比。
 - 标签类型：`workshop/browse/?appid=322330&requiredtags[]=version:0.1.1` 能筛出结果，
   说明它是**普通标签**（kvtags 不参与筛选）。
-
-### 10.7 ModUploader 的坑
-
-- **不选条目就是新建**。工具「Mod 列表」下拉里列的是你账号下已发布条目；不选直接发布 → 生成新 ID。
-  新 ID 必须写回 VDF 的 `publishedfileid`，旧条目用工具里的 Delete 删掉（删后网页返回 500）。
-- **打包的是整个 mod 目录**（`Update Data (ALL files in directory will be uploaded)`）。
-  所以 mod 目录只放本体文件；开发用 README 之类放 `docs/`，否则会进订阅者的下载包。
-- 描述框没有语言选项，写的是 `english` 槽位。
-- Patch Notes 留空 → 工坊「改动说明」里出现一条无正文记录（删不掉）。
-- 上传包大小对不上时先看目录里多了什么（本轮：README 15KB、preview.jpg 13KB 的差异就是这么定位的）。
-
-### 10.8 steamcmd 登录态与重试
-
-- 登录 token 缓存在 `steamcmd\config\config.vdf` 的 `ConnectCache`，一段时间内 `+login <user>` 免密；
-  过期才提示密码 + 手机令牌。
-- 上传报 `Failed to download manifest ".../manifest/..." (request failed)` 是 CDN 瞬时失败，**原命令重跑一次**即可。
