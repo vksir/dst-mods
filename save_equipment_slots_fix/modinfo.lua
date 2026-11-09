@@ -1,15 +1,26 @@
-name = "Save Equipment Slots"
-description = "Saves the inventory slots of equipment items and makes sure they always return to their saved slot. If a saved slot is occupied items will be rearranged automatically to make space."
-author = "dani"
-version = "1.8.3"
+name = "Save Equipment Slots (Fix)"
+description =
+  "dani 的 Save Equipment Slots 的修改版。\n" ..
+  "原 mod：https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686\n" ..
+  "\n" ..
+  "改动说明：原 Mod 槽位配置重上游戏、上下洞穴会丢失。本修改版旨在让槽位配置在洞穴与地表之间切换、退出重连后均可保留。\n" ..
+  "\n" ..
+  "A fixed version of dani's Save Equipment Slots.\n" ..
+  "Original mod: https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686\n" ..
+  "\n" ..
+  "What was fixed: the original mod loses saved slots after relogging and when switching between surface and caves. This version keeps the slot config intact across shard switches and relogs.\n"
+author = "dani (fixed by Lizhang)"
+version = "0.1.0"
 forumthread = ""
 api_version = 6
 api_version_dst = 10
 
-dont_starve_compatible = true
-reign_of_giants_compatible = true
-shipwrecked_compatible = true
-hamlet_compatible = true
+-- 修复版使用了 DST 专属 API(TheSim:SetPersistentString / net_hash 语义等)，
+-- 且未在 DS 单机验证过，不再声明 DS 系列兼容
+dont_starve_compatible = false
+reign_of_giants_compatible = false
+shipwrecked_compatible = false
+hamlet_compatible = false
 dst_compatible = true
 
 all_clients_require_mod = false
@@ -19,12 +30,12 @@ icon_atlas = "modicon.xml"
 icon = "modicon.tex"
 
 local disable_save_slot_toggle_options = {
-  { description = "- none -", data = false },
+  { description = "- 无 - None", data = false },
 }
 
 for i = 0, 25 do
   disable_save_slot_toggle_options[i + 2] = {
-    description = "Control + " .. ("").char(65 + i),
+    description = "Ctrl + " .. ("").char(65 + i),
     data = 97 + i
   }
 end
@@ -45,7 +56,7 @@ for i = 0, 16 do
   local data = 1 + (i * .25)
   local extra_offset = (data - 1) * 100
   offset_options[i+1] = {
-    description = i == 0 and "Default" or "+" .. extra_offset .. "%",
+    description = i == 0 and "Default 默认" or "+" .. extra_offset .. "%",
     data = data
   }
 end
@@ -54,15 +65,15 @@ configuration_options =
 {
   {
     name = "apply_to_items",
-    label = "Apply To Items",
-    hover = "Configure which item types should be saved.",
+    label = "Apply To Items 应用类型",
+    hover = "配置需要保存槽位的物品类型。\nConfigure which item types should be saved.",
 
     options = {
-      { description = "Equipment", data = "100" },
-      { description = "Eq. + Food", data = "110" },
-      { description = "Eq. + Healing", data = "101" },
-      { description = "Eq. + Fo. + He.", data = "111" },
-      { description = "All items", data = "all" },
+      { description = "Equipment 装备", data = "100" },
+      { description = "Eq. + Food 装备+食物", data = "110" },
+      { description = "Eq. + Healing 装备+治疗", data = "101" },
+      { description = "Eq. + Fo. + He. 装备+食物+治疗", data = "111" },
+      { description = "All items 全部物品", data = "all" },
     },
 
     default = "100"
@@ -70,13 +81,13 @@ configuration_options =
 
   {
     name = "show_slot_icons",
-    label = "Show Slot Icons",
-    hover = "Shows an icon of a saved item above its saved slot.\n"..
-            "Click the icon to clear the saved slot of that item.",
+    label = "Show Slot Icons 显示槽位图标",
+    hover = "在已保存的槽位上方显示对应物品的图标，点击图标可清除该槽位的保存。\n" ..
+            "Shows an icon of a saved item above its saved slot. Click the icon to clear the saved slot of that item.",
 
     options = {
-      { description = "Show", data = true },
-      { description = "Hide", data = false },
+      { description = "Show 显示", data = true },
+      { description = "Hide 隐藏", data = false },
     },
 
     default = true
@@ -84,8 +95,8 @@ configuration_options =
 
   {
     name = "slot_icon_opacity",
-    label = "Slot Icon Opacity",
-    hover = "Set the opacity of the slot icons.",
+    label = "Slot Icon Opacity 图标不透明度",
+    hover = "设置槽位图标的不透明度。\nSet the opacity of the slot icons.",
 
     options = percentage_options,
     default = .75
@@ -93,8 +104,8 @@ configuration_options =
 
   {
     name = "slot_icon_scale",
-    label = "Slot Icon Scale",
-    hover = "Set the scale of the slot icons.",
+    label = "Slot Icon Scale 图标缩放",
+    hover = "设置槽位图标的缩放比例。\nSet the scale of the slot icons.",
 
     options = percentage_options,
     default = .75
@@ -102,9 +113,9 @@ configuration_options =
 
   {
     name = "slot_icon_offset",
-    label = "Slot Icon Vertical Offset",
-    hover = "Set the vertical offset of the slot icons\n" ..
-            "expressed as a percentage of 1 inventory slot height.",
+    label = "Slot Icon Offset 图标垂直偏移",
+    hover = "设置槽位图标的垂直偏移，以一个物品栏槽位高度的百分比表示。\n" ..
+            "Set the vertical offset of the slot icons, expressed as a percentage of 1 inventory slot height.",
 
     options = offset_options,
     default = 1
@@ -112,21 +123,24 @@ configuration_options =
 
   {
     name = "disable_save_slots_toggle",
-    label = "Disable Save Slots Toggle",
-    hover = "Key combination that will toggle saving slots on/off.",
+    label = "Save Slots Toggle 暂停保存快捷键",
+    hover = "用于开启/关闭槽位保存功能的组合键。\n" ..
+            "Key combination that will toggle saving slots on/off.",
     options = disable_save_slot_toggle_options,
-    default = false
+    -- 注意：modinfo 的沙箱环境没有任何标准库（无 string/pairs 等），
+    -- 只能用字符串元表调用（同上方 ("").char 惯用法）
+    default = ("v"):byte()
   },
 
   {
     name = "save_slots_initial_state",
-    label = "Save Slots Initial State",
-    hover = "The initial state of the Save Slots behavior.\n"..
-            "Only used when a toggle key is configured.",
+    label = "Save Slots Initial State 初始开关状态",
+    hover = "槽位保存功能的初始状态，仅在配置了暂停快捷键时生效。\n" ..
+            "The initial state of the Save Slots behavior. Only used when a toggle key is configured.",
 
     options = {
-      { description = "On", data = true },
-      { description = "Off", data = false },
+      { description = "On 开", data = true },
+      { description = "Off 关", data = false },
     },
 
     default = true
@@ -134,22 +148,24 @@ configuration_options =
 
   {
     name = "disable_slot_icon_click_when_save_slots_off",
-    label = "Disable Slot Icon Click",
-    hover = "Controls when clicking slot icons is disabled.",
+    label = "Disable Icon Click 暂停时禁用点击",
+    hover = "控制何时禁用槽位图标的点击。\n" ..
+            "Controls when clicking slot icons is disabled.",
     options = {
-      { description = "Never", data = false },
-      { description = "If Save Slots: Off", data = true },
+      { description = "Never 从不", data = false },
+      { description = "If Save Slots: Off 保存关闭时", data = true },
     },
-    default = false
+    default = true
   },
 
   {
     name = "allow_equip_for_space",
-    label = "Allow Equip For Space",
-    hover = "Allows an item to be equipped in order to make space for an incoming item.",
+    label = "Allow Equip For Space 允许装备腾位",
+    hover = "允许通过装备占位物品来为新物品腾出空间。\n" ..
+            "Allows an item to be equipped in order to make space for an incoming item.",
     options = {
-      { description = "Enabled", data = true },
-      { description = "Disabled", data = false },
+      { description = "Enabled 启用", data = true },
+      { description = "Disabled 禁用", data = false },
     },
 
     default = true
@@ -157,31 +173,17 @@ configuration_options =
 
   {
     name = "reserve_saved_slots",
-    label = "Reserve Saved Slots",
-    hover = "Determines if saved slots will be reserved for their items\n"..
-            "and if this only happens when there are other slots available.",
+    label = "Reserve Saved Slots 保留已存槽位",
+    hover = "决定是否为已保存的物品保留其槽位，以及是否仅在其他空槽位可用时才保留。\n" ..
+            "Determines if saved slots will be reserved for their items, and if this only happens when there are other slots available.",
 
     options = {
-      { description = "Never", data = false },
-      { description = "If Free Slots", data = "if_free_slots" },
-      { description = "Always", data = "always" },
+      { description = "Never 从不", data = false },
+      { description = "If Free Slots 有空位时", data = "if_free_slots" },
+      { description = "Always 总是", data = "always" },
     },
 
     default = false
-  },
-
-  {
-    name = "dst_save_items_on_spawn",
-    label = "DST: Save Items on Spawn",
-    hover = "Saves the slots of all items in the inventory when spawned.\n "..
-            "Helps to restore saved slots when resuming or going to Caves.\n",
-
-    options = {
-      { description = "Enabled", data = true },
-      { description = "Disabled", data = false },
-    },
-
-    default = true
   },
 
 }
