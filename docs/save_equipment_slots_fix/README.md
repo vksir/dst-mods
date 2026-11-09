@@ -1,6 +1,6 @@
 # Save Equipment Slots 修复版
 
-> 当前版本：**0.1.1**（2026-11-09；仅更新中英文简介与版本号）
+> 当前版本：**0.1.1**（2026-11-09），工坊条目：[3836742363](https://steamcommunity.com/sharedfiles/filedetails/?id=3836742363)
 
 基于创意工坊 mod [Save Equipment Slots](https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686)（作者 dani，v1.8.3）的本地修改版。
 
