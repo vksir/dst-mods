@@ -1,16 +1,19 @@
 name = "Save Equipment Slots (Fix)"
 description =
-  "dani 的 Save Equipment Slots 的修改版。\n" ..
-  "原 mod：https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686\n" ..
+  "Save Equipment Slots (Fix) - 装备槽记忆\n" ..
   "\n" ..
-  "改动说明：原 Mod 槽位配置重上游戏、上下洞穴会丢失。本修改版旨在让槽位配置在洞穴与地表之间切换、退出重连后均可保留。\n" ..
+  "修改自 dani 的 Save Equipment Slots，原 mod：https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686\n" ..
   "\n" ..
-  "A fixed version of dani's Save Equipment Slots.\n" ..
-  "Original mod: https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686\n" ..
+  "改动说明：\n" ..
+  "1、槽位配置重上游戏、上下洞穴不再丢失。\n" ..
+  "2、些许默认配置调整。特别地，默认开关快捷键变更为 Ctrl + V。\n" ..
   "\n" ..
-  "What was fixed: the original mod loses saved slots after relogging and when switching between surface and caves. This version keeps the slot config intact across shard switches and relogs.\n"
-author = "dani (fixed by Lizhang)"
-version = "0.1.0"
+  "Modified from dani's Save Equipment Slots. Original mod: https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686\n" ..
+  "Changes:\n" ..
+  "1. Slot configurations no longer get lost when reloading the game or entering/exiting caves.\n" ..
+  "2. Minor adjustments to the default configuration. In particular, the default toggle shortcut has been changed to Ctrl + V."
+author = "Villkiss (Original author: dani)"
+version = "0.1.1"
 forumthread = ""
 api_version = 6
 api_version_dst = 10
