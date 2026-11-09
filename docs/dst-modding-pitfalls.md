@@ -69,10 +69,11 @@ local tonumber = GLOBAL.tonumber
 - 专用服/集群：shard 存档目录的 `..\modoverrides.lua`。
 - 部署：游戏 mods 目录中的 mod 文件夹是指向仓库目录的 **Junction**（目录联接，无需管理员权限），仓库即游戏目录，**改完即生效，无需复制**：
   ```cmd
-  mklink /J "D:\SteamLibrary\steamapps\common\Don't Starve Together\mods\<mod>" "D:\Code\MyMods\dst-mods\<mod>"
+  mklink /J "D:\SteamLibrary\steamapps\common\Don't Starve Together\mods\<mod>" "D:\Code\MyMods\dst-mods\mods\<mod>"
   ```
   - 替换已存在的真实目录前先 `diff -rq` 确认游戏侧无独有内容
   - 删除 Junction 用 `rmdir`（只删链接不删源）；仓库移动后链接会悬空，需重建
+  - 仓库内 mod 统一放在 `mods\<mod>`：调整目录结构后旧 Junction 一定悬空，删掉按新路径重建即可
 
 ## 7. 调试手段
 
