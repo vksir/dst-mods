@@ -82,9 +82,13 @@ python tools/common/workshop.py publish --mod mods/<mod> --item <ID>         --c
 ## 5. 校验（必须做）
 
 ```bash
-python tools/common/workshop.py verify --item <ID>          # english 槽位 + 标签 + time_updated
-python tools/common/workshop.py verify --item <ID> --pages  # 再看中英社区页（偶发抽查，别连刷）
+python tools/common/workshop.py verify --item <ID>                          # english 槽位 + 标签 + time_updated
+python tools/common/workshop.py verify --item <ID> --text mods/<mod>        # 逐语言比对线上 vs 本地 txt
+python tools/common/workshop.py verify --item <ID> --pages                  # 再看中英社区页（偶发抽查，别连刷）
 ```
+
+`--text` 是“文案到底有没有按我想要的样子上去”的唯一硬证据：en 走 Web API，zh 走社区页逆推 BBCode，
+比对前会抹掉裸链接被包成 `[url=…]` 的噪声。社区页 429 就等几分钟再跑。
 
 确认四点：`tags` 含 `version:<新版本>` 与类型标记、`description` 没被意外覆盖、
 `time_updated` 是刚才、中文槽位标题/正文正确。

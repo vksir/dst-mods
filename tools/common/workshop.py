@@ -37,6 +37,7 @@ DST 判断"mod 过期"靠工坊条目的 `version:x.y.z` 标签，steamcmd 改�
 """
 
 import argparse
+import difflib
 import html
 import json
 import os
@@ -559,12 +560,57 @@ def cmd_plan(args):
     return 0
 
 
+def normalize_bbcode(text):
+    """抹平「社区页 ↔ 原文」的无关差异，用于比对线上文案与本地文件。
+
+    Steam 会把裸链接渲染成 <a>，逆推后多一层 `[url=…linkfilter…]…[/url]`；
+    行尾空格、多余空行也算噪声。
+    """
+    s = (text or "").replace("\r\n", "\n")
+    s = re.sub(r"\[url=[^\]]*\]((?:https?://)\S+?)\[/url\]", r"\1", s)
+    s = re.sub(r"[ \t]+$", "", s, flags=re.M)
+    s = re.sub(r"\n{3,}", "\n\n", s)
+    return s.strip()
+
+
 def cmd_verify(args):
     out = {"web_api_english": web_item(args.item)}
     if args.pages:
         out["community_page"] = {lang: community_page(args.item, lang) for _, lang in COPY_LANGS}
+
+    if args.text:
+        # 逐语言比对「线上 vs 本地文件」：en 走 Web API，zh 走社区页（会被渲染，需归一化）
+        mod_dir = os.path.abspath(args.text)
+        copy = load_copy(args.copy_dir or copy_dir_for(mod_dir))
+        checks = {}
+        for key, cfg in copy.items():
+            try:
+                if key == "en":
+                    live_title = web_item(args.item).get("title") or ""
+                    live_desc = web_item(args.item).get("description") or ""
+                else:
+                    live_title, live_desc = page_to_bbcode(args.item, cfg["lang"])
+            except Exception as exc:
+                checks[key] = {"error": str(exc)}
+                continue
+            a = [l for l in normalize_bbcode(cfg["description"]).split("\n") if l.strip()]
+            b = [l for l in normalize_bbcode(live_desc).split("\n") if l.strip()]
+            diff = [l for l in difflib.unified_diff(a, b, "本地", "线上", lineterm="", n=0)]
+            checks[key] = {
+                "title_matches": live_title.strip() == cfg["title"].strip(),
+                "live_title": live_title,
+                "local_title": cfg["title"],
+                "text_matches": a == b,
+                "local_chars": len(cfg["description"]),
+                "live_chars": len(live_desc),
+                "diff": diff[:20],
+            }
+        out["copy_check"] = checks
+
     print(json.dumps(out, ensure_ascii=False, indent=2))
-    return 0
+    ok = all(c.get("text_matches") and c.get("title_matches")
+             for c in out.get("copy_check", {}).values()) if out.get("copy_check") else True
+    return 0 if ok else 1
 
 
 def cmd_dump(args):
@@ -777,6 +823,9 @@ def main(argv=None):
     sp = sub.add_parser("verify", help="Web API / 社区页 核对条目")
     sp.add_argument("--item", required=True, type=int)
     sp.add_argument("--pages", action="store_true", help="同时核对中英文社区页")
+    sp.add_argument("--text", metavar="MOD_DIR",
+                    help="逐语言比对线上文案与本地 workshop/*.txt（en 走 Web API，zh 走社区页）")
+    sp.add_argument("--copy-dir", help="双语文案目录（默认 docs/mods/<mod>/workshop）")
     sp.set_defaults(func=cmd_verify)
 
     sp = sub.add_parser("delete", help="删除条目（自测清理用）")

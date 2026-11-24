@@ -298,7 +298,9 @@ python tools/common/workshop.py publish --mod mods/<mod> --item <ID>         --c
 - `--copy-only`：不提交内容/标签/预览图，只写语言槽位，也不再因为「版本没递增」拦你；
 - `--langs zh`：只提交中文槽位（避免给 english 槽位留下一条内容没变的改动记录）；
 - 校验：`--copy-only` 模式下会核对 english 槽位与 `workshop/en.txt` 是否一致；
-  中文槽位的内容级核对要读社区页（`page_to_bbcode`），频繁请求会被 429，隔几分钟再抓。
+  全量逐语言比对用 `verify --text`（en 走 Web API，zh 走社区页并把 HTML 逆推回 BBCode，
+  比对前用 `normalize_bbcode` 抹掉裸链接被包成 `[url=…]` 这类噪声）；
+  社区页频繁请求会 429，隔几分钟再抓。
 
 ---
 
