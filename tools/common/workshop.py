@@ -453,11 +453,14 @@ class SteamUGC:
             elif activity:
                 break
             elif time.time() > quiet_until:
-                log("  [快速提交] 没抓到进度回调，按已完成处理")
+                log("  [快速提交] 没抓到进度回调")
                 break
             time.sleep(0.2)
         else:
             raise SystemExit("上传超时（15 分钟）")
+
+        # 进度回调走完不等于成功（实测可能是 "Timeout uploading manifest"），
+        # 真正的结论由 cmd_publish 回读线上标签/文案来判定。
         return True
 
     def delete(self, item_id):
@@ -663,8 +666,27 @@ def cmd_publish(args):
     finally:
         ugc.shutdown()
 
-    time.sleep(4)
-    out = {"web_api_english": web_item(args.item)}
+    # 回读校验：工坊侧落库有延迟（实测 1~2 分钟），盯 tags 是否变成预期值
+    expected = plan["new_tags"]
+    got, ok = None, False
+    verified = SteamUGC(find_steam_api(args.steam_api)).init()
+    try:
+        for attempt in range(30):
+            time.sleep(6)
+            got = verified._query(args.item)["tags"]
+            if got == expected:
+                ok = True
+                break
+            print(f"  [等待落库 {attempt + 1}/30] tags={got}")
+    finally:
+        verified.shutdown()
+    if not ok:
+        raise SystemExit(
+            f"上传后标签没变成预期值：期望 {expected}，实际 {got}" + chr(10) +
+            "常见原因：游戏客户端在跑（会抢上传带宽导致 manifest 超时，看 "
+            "Steam/logs/workshop_log.txt 里的 'Timeout uploading manifest'）、Steam 限流，重试即可")
+
+    out = {"verified_tags": got, "web_api_english": web_item(args.item)}
     if args.pages:
         out["community_page"] = {lang: community_page(args.item, lang) for _, lang in COPY_LANGS}
     print(json.dumps(out, ensure_ascii=False, indent=2))
