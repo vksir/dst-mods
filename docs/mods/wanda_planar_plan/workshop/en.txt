@@ -1,0 +1,24 @@
+Wanda Planar Plan
+
+[h1]Wanda Planar Plan[/h1]
+
+An overhaul pack for Wanda: reworked planar damage, nameable watches, a dedicated watch bag, and haste / slow watches with switchable tiers.
+Every feature can be toggled in Mod Configuration.
+
+[h2]New items[/h2]
+[list]
+[*][b]Haste Watch[/b]: right-click to cycle off / 30% / 50% — faster movement and faster aging.
+[*][b]Slow Watch[/b]: right-click to cycle off / 30% / 50% — nearby enemies slow down, at the cost of faster aging.
+[*][b]Watch Bag[/b]: 2×8 slots for Wanda's watches only; right-click to open or close, it stays open while you walk.
+[/list]
+
+[h2]Reworked abilities[/h2]
+[list]
+[*][b]Planar damage[/b]: damage dealt is fully planar; planar damage taken is treated as normal damage.
+[*][b]Backstep Watch[/b]: the block starts at cast time, plus 10 frames of protection after the cast.
+[*][b]Second Chance Watch[/b]: no longer destroyed when used to revive yourself.
+[*][b]Naming[/b]: right-click a Telltale Heart / Rift Watch with a Feather Pencil to name it.
+[/list]
+
+[h2]Feedback[/h2]
+Please report issues in the comments, with your game version and other mods installed.

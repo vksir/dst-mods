@@ -1,0 +1,39 @@
+旺达位面计划（Wanda Planar Plan）
+
+[h1]旺达位面计划[/h1]
+旺达（Wanda）加强包：位面伤害重做、可命名的怀表、专属钟表袋，以及能切档的加速表与减速表。
+每项功能都能在「模组配置」里单独开关。
+
+[h2]新增物品[/h2]
+[list]
+[*][b]加速表[/b]：右键切换 关闭 / 30% / 50%，移动速度与老化同步加快。
+[*][b]减速表[/b]：右键切换 关闭 / 30% / 50%，身边敌人变慢，代价是自己老化更快。
+[*][b]钟表袋[/b]：2×8 格，只装旺达的钟表；右键开关，人物走动不会关闭。[/list]
+[h2]能力改动[/h2]
+[list]
+[*][b]位面伤害[/b]：造成的伤害全额按位面结算，受到的位面伤害按普通伤害结算。
+[*][b]倒走表[/b]：施法起手就有格挡，施放成功后追加 10 帧免伤。
+[*][b]第二次机会表[/b]：灵魂状态用它救自己后不再损毁。
+[*][b]命名[/b]：拿羽毛笔右键溯源表 / 裂缝表即可起名字。[/list]
+[h2]反馈[/h2]
+问题请在评论区反馈，附上游戏版本和你装的其它 mod。
+
+[hr][/hr]
+
+[h1]Wanda Planar Plan[/h1]
+An overhaul pack for Wanda: reworked planar damage, nameable watches, a dedicated watch bag, and haste / slow watches with switchable tiers.
+Every feature can be toggled in Mod Configuration.
+
+[h2]New items[/h2]
+[list]
+[*][b]Haste Watch[/b]: right-click to cycle off / 30% / 50% — faster movement and faster aging.
+[*][b]Slow Watch[/b]: right-click to cycle off / 30% / 50% — nearby enemies slow down, at the cost of faster aging.
+[*][b]Watch Bag[/b]: 2×8 slots for Wanda's watches only; right-click to open or close, it stays open while you walk.[/list]
+[h2]Reworked abilities[/h2]
+[list]
+[*][b]Planar damage[/b]: damage dealt is fully planar; planar damage taken is treated as normal damage.
+[*][b]Backstep Watch[/b]: the block starts at cast time, plus 10 frames of protection after the cast.
+[*][b]Second Chance Watch[/b]: no longer destroyed when used to revive yourself.
+[*][b]Naming[/b]: right-click a Telltale Heart / Rift Watch with a Feather Pencil to name it.[/list]
+[h2]Feedback[/h2]
+Please report issues in the comments, with your game version and other mods installed.

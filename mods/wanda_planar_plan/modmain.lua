@@ -632,7 +632,13 @@ if ENABLE_WATCH_BAG then
     -- StateGraphInstance:PreviewAction 会把它当 previewaction 静默丢弃（fn 永不执行，见踩坑文档 §16）。
     -- 原版 ACTIONS.ADDFUEL 走的是 "doshortaction"（SGwilson.lua:1041；pickup/pickup_pst 共 10 帧，
     -- 第 6 帧 PerformBufferedAction），这里照抄；客户端预测需另给 "wilson_client" 加一份。
-    local ToggleBagAction = GLOBAL.Action({ rmb = true, priority = 2, distance = 0 })
+    -- mount_valid = true：骑牛时也能开关。骑乘中 playeractionpicker 会压一个
+    -- MountedActionFilter（components/rider_replica.lua:135，只放行 action.mount_valid == true，
+    -- 优先级 ACTION_FILTER_PRIORITIES.mounted = 20），它作用在所有动作收集器（含 INVENTORY）上，
+    -- 所以不加这个字段就是“右键提示没了、点了也没反应”——而本袋的自动关闭全被拦掉，
+    -- 于是骑在牛上就再也关不掉。原版 RUMMAGE / EAT / ADDFUEL 等也都是 mount_valid。
+    -- 不要顺手加 encumbered_valid / floating_valid：原版 RUMMAGE 也没有，保持一致。
+    local ToggleBagAction = GLOBAL.Action({ rmb = true, priority = 2, distance = 0, mount_valid = true })
     ToggleBagAction.id = "WANDA_TOGGLE_WATCH_BAG"
     ToggleBagAction.str = "开启"
     ToggleBagAction.fn = function(act)

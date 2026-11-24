@@ -7,14 +7,16 @@
 
 | 项 | 值 |
 |---|---|
-| 工坊条目 | **已发布**（2026-11-18 首发 0.4.0；工坊 ID 待填 `sharedfiles/filedetails/?id=<ID>`） |
+| 工坊条目 | **3842009601**（https://steamcommunity.com/sharedfiles/filedetails/?id=3842009601；2026-11-18 首发 0.4.0） |
 | `modinfo.name`（代码） | `Wanda Planar Plan` —— **只能 ASCII**，与文件夹名一致 |
 | 工坊标题（网页/上传器） | `Wanda Planar Plan 旺达位面计划`（页面支持中文，玩家看得懂） |
 | 模组 ID（本地） | `wanda_planar_plan` |
-| `modinfo.version` | `0.4.1` → 工坊标签 `version:0.4.1`（**每次重新上传都要 +1**，否则版本标签不刷新） |
+| `modinfo.version` | `0.4.2` → 工坊标签 `version:0.4.2`（**每次重新上传都要 +1**，否则版本标签不刷新） |
 | 安装标签 | `all_clients_require_mod = true` → 工坊标签自动表明「双端都要装」，正文不再赘述 |
 | `server_filter_tags` | `wanda`、`character` |
 | 作者 | Villkiss |
+| 双语文案定稿 | `workshop/en.txt`（英文标题+正文）、`workshop/zh.txt`（中文）——`workshop.py publish` 直接读 |
+| 线上槽位现状 | english = 纯英文；schinese = 中英双语整段（2026-11-24 用 `workshop.py dump` 拉回 `workshop/zh.txt`） |
 
 ## 2. 标题
 
@@ -26,62 +28,13 @@
 **代码里的名字不能有中文**：`modinfo.name`、文件夹名、prefab 名、netvar 名、资源路径一律 ASCII；
 中文只出现在展示文本（`description` / `hover` / `STRINGS` / 工坊标题）。
 
-## 3. 正文（复制粘贴用）
+## 3. 正文（中英双语）
 
-> 下方整段粘进 ModUploader 的描述框。全部是真实换行 + 工坊 BBCode 子集，不要转成 Markdown。
-
-```bbcode
-[h1]旺达位面计划[/h1]
-
-旺达（Wanda）加强包：位面伤害重做、可命名的怀表、专属钟表袋，以及能切档的加速表与减速表。
-每项功能都能在「模组配置」里单独开关。
-
-[h2]新增物品[/h2]
-[list]
-[*][b]加速表[/b]：右键切换 关闭 / 30% / 50%，移动速度与老化同步加快。
-[*][b]减速表[/b]：右键切换 关闭 / 30% / 50%，身边敌人变慢，代价是自己老化更快。
-[*][b]钟表袋[/b]：2×8 格，只装旺达的钟表；右键开关，人物走动不会关闭。
-[/list]
-
-[h2]能力改动[/h2]
-[list]
-[*][b]位面伤害[/b]：造成的伤害全额按位面结算，受到的位面伤害按普通伤害结算。
-[*][b]倒走表[/b]：施法起手就有格挡，施放成功后追加 10 帧免伤。
-[*][b]第二次机会表[/b]：灵魂状态用它救自己后不再损毁。
-[*][b]命名[/b]：拿羽毛笔右键溯源表 / 裂缝表即可起名字。
-[/list]
-
-[h2]反馈[/h2]
-问题请在评论区反馈，附上游戏版本和你装的其它 mod。
-
-[hr][/hr]
-
-[h1]Wanda Planar Plan[/h1]
-
-An overhaul pack for Wanda: reworked planar damage, nameable watches, a dedicated watch bag, and haste / slow watches with switchable tiers.
-Every feature can be toggled in Mod Configuration.
-
-[h2]New items[/h2]
-[list]
-[*][b]Haste Watch[/b]: right-click to cycle off / 30% / 50% — faster movement and faster aging.
-[*][b]Slow Watch[/b]: right-click to cycle off / 30% / 50% — nearby enemies slow down, at the cost of faster aging.
-[*][b]Watch Bag[/b]: 2×8 slots for Wanda's watches only; right-click to open or close, it stays open while you walk.
-[/list]
-
-[h2]Reworked abilities[/h2]
-[list]
-[*][b]Planar damage[/b]: damage dealt is fully planar; planar damage taken is treated as normal damage.
-[*][b]Backstep Watch[/b]: the block starts at cast time, plus 10 frames of protection after the cast.
-[*][b]Second Chance Watch[/b]: no longer destroyed when used to revive yourself.
-[*][b]Naming[/b]: right-click a Telltale Heart / Rift Watch with a Feather Pencil to name it.
-[/list]
-
-[h2]Feedback[/h2]
-Please report issues in the comments, with your game version and other mods installed.
-```
-
-> 介绍页只写**核心功能与玩家关心的点**：机制细节（档位存在人物身上、叠加公式、UI 布局、
-> 配方材料）一律不写——那些玩家进游戏就能看到，写多了反而没人看。
+> **正文只放一处**：[`workshop/zh.txt`](workshop/zh.txt)（中文）与 [`workshop/en.txt`](workshop/en.txt)（英文），
+> 第 1 行标题、第 2 行空、第 3 行起是 bbcode 正文。`tools/common/workshop.py publish` 直接读它们，
+> 按语言各提交一次。**改描述就改这两个文件**，别在网页上手改（下次发布会覆盖）。
+>
+> 内容是**以线上为准**拉回来的（`workshop.py dump`），线上改过之后重新 dump 一次即留档。
 
 ## 4. 预览图 `preview.jpg`（上传器读取）
 
@@ -128,12 +81,15 @@ Please report issues in the comments, with your game version and other mods inst
 
 | 版本 | Patch Notes（粘进上传器的「改动说明」） |
 |---|---|
-| **0.4.1**（当前） | `v0.4.1 — 更名与图标`<br>`· mod 更名为「旺达位面计划」`<br>`· 新增 Mods 列表图标`<br>`· 介绍页精简为核心功能` |
+| **0.4.2**（当前） | `v0.4.2 — 骑牛也能开关钟表袋`<br>`· 钟表袋的右键动作补上 mount_valid：骑上牛后仍能右键开关，不再出现「关不掉」`<br>`· 加速表/减速表在骑乘时不提供切档动作（与原版 CAST_POCKETWATCH 一致），档位照常生效` |
+| 0.4.1 | `v0.4.1 — 更名与图标`<br>`· mod 更名为「旺达位面计划」`<br>`· 新增 Mods 列表图标`<br>`· 介绍页精简为核心功能` |
 | 0.4.0（首发） | `v0.4.0 — 首发`<br>`· 位面伤害重做、溯源表/裂缝表可命名、钟表袋、加速表与减速表、倒走表护盾、第二次机会表`<br>`· 加速表/减速表各两档（30% / 50%），老化加速加算叠加`<br>`· 钟表袋面板支持分开布局（与背包上下对齐）与融合布局（占用背包列）` |
 
-> **重新上传的硬性步骤**：`modinfo.version` 递增 → 上传器里选中**已有条目**（别新建）→
-> Patch Notes 写这一版改了什么 → Upload。版本不变的话工坊标签 `version:x.y.z` 不会刷新，
-> 玩家游戏内会继续提示「mod 过期」。
+> **重新上传的硬性步骤**：`modinfo.version` 递增 → 用脚本更新**已有条目**（别新建）：
+> `python tools/common/workshop.py publish --mod mods/wanda_planar_plan --item 3842009601 --changenote "v<x.y.z> — 一句话"`
+> → 回读校验 `--changenote` 已落库、标签含 `version:<新版本>`。
+> 版本不变的话工坊标签 `version:x.y.z` 不会刷新，玩家游戏内会继续提示「mod 过期」。
+> 改标题/改描述**只改 `workshop/{en,zh}.txt`**（线上改过就先 `dump` 拉回）；首发新建条目才开 ModUploader。
 
 ## 7. 发布前检查（本 mod 特有）
 
@@ -147,8 +103,10 @@ Please report issues in the comments, with your game version and other mods inst
 [ ] 分开/融合两种布局各截一张图（介绍页要用，也证明不回退）
 [ ] 已提醒用户准备/确认 preview.jpg（268×268 宣传图）；当前是占位版，正式图由用户提供
 [ ] 测试标记清零：grep -rn "TEMP\|\[T\]\|\[DBG\]\|\[W7\]" mods/wanda_planar_plan --include=*.lua
-[ ] `modinfo.version` 已递增（当前 0.4.1），Patch Notes 已写
-[ ] 游戏已关闭 → ModUploader → **选中已有条目** → 目录选 mods/wanda_planar_plan → 粘 §3 → Upload
-[ ] Web API 校验 title / tags（应含 all_clients_require_mod、version:0.4.1）/ description
-[ ] 网页补 5 张截图、中文语言槽位
+[ ] `modinfo.version` 已递增（当前 0.4.2），Patch Notes 已写
+[ ] `workshop/{en,zh}.txt` 已在仓库里改完（第 1 行标题 / 第 2 行空 / 其余正文）
+[ ] 游戏已关闭 → `python tools/common/workshop.py plan --mod mods/wanda_planar_plan --item 3842009601` 无警告
+[ ] `... publish --mod mods/wanda_planar_plan --item 3842009601 --changenote "v<x.y.z> — …"` 跑完（中英各一次提交）
+[ ] `... verify --item 3842009601 --pages` 核对：tags 含 all_clients_require_mod / character / version:<新版本>，中英标题与正文都对
+[ ] 网页补 5 张截图
 ```

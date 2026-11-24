@@ -18,7 +18,7 @@ author = "Villkiss"
 -- Mods 列表图标（必须指向 mod 目录内的 tex+xml 对，不能用游戏内路径）
 icon_atlas = "modicon.xml"
 icon = "modicon.tex"
-version = "0.4.1"
+version = "0.4.2"
 
 forumthread = ""
 
