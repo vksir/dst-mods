@@ -49,6 +49,7 @@ Single-context：根目录 `GLOSSARY.md` + `docs/adr/`。See `docs/agents/domain
 ### 发布
 
 发/更新工坊条目（内容 + 工坊标签 + 中英双语标题与描述）用项目 skill
-`.agents/skills/dst-mod-publish/`：文案只改 `docs/mods/<mod>/workshop/{en,zh}.txt`，
+`.agents/skills/dst-mod-publish/`（本地一份，`.agents/` 不入库）：
+文案只改 `docs/mods/<mod>/workshop/{en,zh}.txt`（中文文件只写中文），
 发布跑 `python tools/common/workshop.py publish`。不要用 steamcmd（改不了标签），
 也不要在网页上手改描述（会被下次发布覆盖）。

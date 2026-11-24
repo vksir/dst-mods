@@ -1,6 +1,9 @@
 # 本地 issue tracker / 调试脚本 / 中间产物（每人本地一份）
 .scratch/
 
+# 项目级 agent skill / 本地 agent 配置（每人本地一份，不入库）
+.agents/
+
 # 构建产物
 dist/
 
