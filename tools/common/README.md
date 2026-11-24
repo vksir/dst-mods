@@ -10,6 +10,7 @@
 | [`uilook.py`](#uilookpy屏幕模板匹配) | 屏幕模板匹配，可当"东西在不在"的断言 |
 | [`gameinput.py`](#gameinputpy带焦点校验的输入) | 带焦点校验的键鼠输入，支持 Unicode |
 | [`ktex2png.py`](#ktex2pngpy解码-ktex) | KTEX 解码，校验图标/图集产物 |
+| [`workshop.py`](#workshoppy免-gui-发布) | 创意工坊发布/校验/删除（ISteamUGC，免 GUI） |
 
 ---
 
@@ -86,6 +87,51 @@ python tools/common/ktex2png.py <file.tex> out.png
 
 用途：核对编译产物（图标真的进 atlas 了吗、`anim/<x>.zip` 里的 `atlas-0.tex` 长什么样）。
 注意 DST 图集是**上下翻转**存储，翻正后再比较。
+
+---
+
+## workshop.py：免 GUI 发布
+
+替代官方 `ModUploader.exe` 的**更新**流程（首发仍用 GUI）。直接调 DST 自带
+`bin64/steam_api64.dll` 的 `ISteamUGC`：`StartItemUpdate` → `SetItemTags` /
+`SetItemContent` / `SetItemPreview` → `SubmitItemUpdate`。
+
+```bash
+python tools/common/workshop.py plan    --mod mods/wanda_planar_plan --item 3842009601
+python tools/common/workshop.py publish --mod mods/wanda_planar_plan --item 3842009601 \
+                                        --changenote "v0.4.2 — 骑牛可开关钟表袋"
+python tools/common/workshop.py verify  --item 3842009601 --pages   # 双语页面核对
+python tools/common/workshop.py dump    --mod mods/wanda_planar_plan --item 3842009601
+python tools/common/workshop.py delete  --item <ID> --yes           # 自测条目清理
+```
+
+- 前置：**Steam 客户端已用发布账号登录**、游戏已关闭、64 位 Python；
+- 标签：读条目**现有标签**，只换 mod 类型标记（`client_only_mod` 等）与
+  `version:<modinfo.version>`，分类标签（`character` / `tweak` / `item` …）原样保留；
+- **双语文案**：读 `docs/mods/<mod>/workshop/{en,zh}.txt`（第 1 行标题 / 第 2 行空 / 其余正文），
+  逐语言提交；没有这两个文件就不碰标题与描述（`--no-copy` 也可强制跳过）；
+- preflight：游戏进程、`preview.jpg`（268×268 JPG）、版本标签是否已递增、mod 目录杂草、
+  中文文件里到底有没有中文；`--force` 可越过（不建议）；
+- 结束后自动调 Steam Web API 回读；`--pages` 额外抽一次中英文社区页（公开条目）。
+
+三条实测限制（Steam 侧，绕不过）：
+
+1. 一次更新只认一个语言（`SetItemUpdateLanguage` 对随后的标题/描述生效，后一次覆盖前一次）
+   → 双语 = 两次提交，内容/标签/预览图挂在第一次；
+2. `changenote` 不分语言 → 第二次提交用 `--lang-changenote`（默认「（同步其他语言页面文案）」），
+   传空串会留一条无正文记录；
+3. `GetQueryUGCResult` 的描述字段只回前 256 字符 → `dump` 的中文正文取自
+   `publishing.md` 的 bbcode 块，英文正文取自 Web API。
+
+为什么不用 steamcmd：`workshop_build_item` 的 VDF 没有 `tags` 键（键名白名单见
+`steamconsole64.dll`：`workshopitem / publishedfileid / title / description / visibility /
+previewfile / contentfolder / kvtags / changenote`），而 DST 的「mod 过期」提示依赖
+`version:x.y.z` 标签 → 只靠 steamcmd 刷不了版本。详见
+[发布指南 §1.1](../../docs/mods/common/publishing.md)。
+
+实测（2026-11-24，自测条目 3845096080，已删除）：steamcmd 写 `"tags" "client_only_mod,version:0.0.1"`
+上传成功但 `tags: []`；本脚本同一伪造 mod 上传后 `tags: [client_only_mod, version:0.0.1]`，
+把 modinfo 改到 0.0.2 再传后标签变 `version:0.0.2`，标题与描述两项全程未被覆盖。
 
 ---
 

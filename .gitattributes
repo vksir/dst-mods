@@ -1,0 +1,2 @@
+# 工坊文案会被 publish 原样上传，行尾必须是 LF（别让 autocrlf 改成 CRLF）
+docs/mods/*/workshop/*.txt text eol=lf

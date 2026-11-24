@@ -1,12 +1,13 @@
 # 发布指南（创意工坊）· 通用
 
-> 本文规定**流程**与**介绍页写法**；每个 mod 的具体文案（标题 + 正文 + 截图清单）放在
-> `docs/mods/<mod>/publishing.md`，复制粘贴到 ModUploader 即可。
+> 本文规定**流程**与**介绍页写法**；每个 mod 的**文案**（中英标题 + 正文）放在
+> `docs/mods/<mod>/workshop/{en,zh}.txt`（脚本直接读，线上为准留档），条目信息、截图清单、
+> Patch Notes 放在 `docs/mods/<mod>/publishing.md`。
 > 遇到新坑回写本文，别只改单 mod 文档。
 
 ## 目录
 
-1. [只用官方 ModUploader](#1-只用官方-moduploader)
+1. [两条发布通道：GUI 首发 / 脚本更新](#1-两条发布通道gui-首发--脚本更新)
 2. [介绍页文案规范（重点）](#2-介绍页文案规范重点)
 3. [发布前准备](#3-发布前准备)
 4. [上传流程](#4-上传流程)
@@ -17,23 +18,93 @@
 
 ---
 
-## 1. 只用官方 ModUploader
+## 1. 两条发布通道：GUI 首发 / 脚本更新
 
-`Don't Starve Mod Tools\ModUploader.exe`。**不要用 steamcmd**：
-`client_only_mod` / `server_only_mod` / `all_clients_require_mod` / `version:x.y.z` 这类工坊标签
-只有它能写。
+**首发**用官方 `Don't Starve Mod Tools\ModUploader.exe`（要填标题、粘正文、传截图，只有 GUI 顺手）；
+**之后的每次内容更新**用仓库脚本 [`tools/common/workshop.py`](../../../tools/common/workshop.py)，
+免手动操作、不改网页上润色过的描述。
 
-steamcmd（`workshop_build_item` + VDF）已实测弃用：
+```bash
+cd D:/Code/MyMods/dst-mods
+# 1) 先看要发生什么（会读条目现有标签、算新标签、跑 preflight）
+python tools/common/workshop.py plan    --mod mods/<mod> --item <工坊ID>
+# 2) 上传内容 + 刷新 version 标签（不传 --title / --description-file 就完全不碰标题与描述）
+python tools/common/workshop.py publish --mod mods/<mod> --item <工坊ID> \
+                                        --changenote "v0.4.2 — 一句话改了什么"
+# 3) 校验（工坊侧落库有延迟，脚本已内置重试）
+python tools/common/workshop.py verify  --item <工坊ID>
+```
 
-1. **写 `description` / `title` 会覆盖**网页上润色过的文案（整体替换该字段）；
-2. **VDF 不支持 `\n` 转义**，写 `\n` 会原样入库，页面显示字面量 `\n\n`；
-   多行必须写**真实换行**（KeyValues 允许引号内换行）；
-3. **`tags` 段完全无效**。只支持 `kvtags`（页面不显示、不能筛选）；两种写法都试过
-   （数组块 / 逗号串），上传成功但标签一个没变；
-4. **`version:` 标签会停滞**。只更内容的 steamcmd 无法刷新 `version:x.y.z`——
-   玩家仍会自动下载，但游戏内「mod 过期」提示不刷新，容易误判。
+前置条件：**Steam 客户端已用发布账号登录**、游戏已关闭、64 位 Python；
+`steam_api64.dll` 直接复用 DST 自带的 `bin64/steam_api64.dll`。
+脚本做的是和 ModUploader 的 Update 完全一样的事（`ISteamUGC::StartItemUpdate` →
+`SetItemTags` / `SetItemContent` / `SetItemPreview` → `SubmitItemUpdate`）。
 
-若将来临时更内容，VDF **只写 4 个键**（`appid` / `publishedfileid` / `contentfolder` / `changenote`）。
+### 1.1 为什么不用 steamcmd（2026-11-24 实测，结论：只能传内容，改不了标签）
+
+`steamcmd +login <账号> +workshop_build_item <vdf>` 能无人值守跑通（缓存登录），
+但 VDF 只认这几个键——`steamconsole64.dll` 里的键名白名单就是它们：
+
+```
+workshopitem / publishedfileid / title / description / visibility /
+previewfile / contentfolder / kvtags / changenote
+```
+
+**没有 `tags`**。实测写 `"tags" "client_only_mod,version:0.0.1"`，上传成功、
+`GetPublishedFileDetails` 回来 `tags: []` ——`client_only_mod` / `all_clients_require_mod` /
+`version:x.y.z` 一个都写不进去。而 DST 客户端二进制里明确有
+`all_clients_require_mod` / `version_compatible` / `version:` 与
+`[Mod Warning] %s is out of date and needs to be updated for new users to be able to join the server`，
+说明「mod 过期」判定就看这些标签 → **steamcmd 单独用不了**。
+
+顺带确认的两条 steamcmd 事实（以后想用它当备份手段时有用）：
+
+1. `description` / `title` 是整体替换，不写就保持原样（想保网页润色版就一个字都别写）；
+2. **描述里写真实换行（引号内直接换行）能落成真换行**，写 `\n` 两字符会原样显示。
+
+### 1.2 脚本与 ModUploader 的差别
+
+| 项 | ModUploader（GUI） | `workshop.py` |
+|---|---|---|
+| 新建条目 | 支持 | 不支持（首发仍走 GUI；之后用 `--item` 更新） |
+| 标签 | 从 modinfo 生成 + 分类勾选 | 读现有标签，只替换 mod 类型标记与 `version:`，**分类标签（character/tweak/item…）原样保留** |
+| 标题 / 描述 | 只能写 english 槽位（多语言得回网页手改） | **中英双语一起写**（读 `workshop/{en,zh}.txt`） |
+| 预览图 | 用 mod 目录里的 `preview.jpg` | 同上（preview.jpg 缺失会 preflight 拦下） |
+| 多人协作 / 无人值守 | 不行 | 行（CI、agent 都能跑） |
+| 删条目 | GUI 有删除按钮 | `delete --item <ID> --yes`（自测清理用） |
+
+### 1.3 双语文案：仓库里改，一条命令同步
+
+工坊条目每个语言一个标题 + 一份描述。**别再回网页手改**，改成编辑仓库文件：
+
+```
+docs/mods/<mod>/workshop/en.txt     英文标题 / 正文
+docs/mods/<mod>/workshop/zh.txt     中文标题 / 正文
+```
+
+文件格式就三行规则：**第 1 行标题；第 2 行留空；第 3 行起是正文**（BBCode 子集，真换行）。
+`workshop.py publish` 自动读它们并逐语言提交；没有这两个文件就完全不碰标题与描述。
+
+```bash
+# 文案有改、内容也有改：一次搞定
+python tools/common/workshop.py publish --mod mods/<mod> --item <ID> \
+        --changenote "v<x.y.z> — 一句话"
+# 提交后核验双语页面（会抽一次社区页，别刷）
+python tools/common/workshop.py verify --item <ID> --pages
+# 想把线上文案拉回本地（迁移/对齐）
+python tools/common/workshop.py dump --mod mods/<mod> --item <ID>
+```
+
+三条硬限制（实测，改不了）：
+
+1. **Steam 的一次更新只认一个语言**：`SetItemUpdateLanguage` 只对随后的标题/描述生效，
+   后一次会把前一次覆盖掉 → 双语必须**两次提交**。脚本已把内容/标签/预览图挂在第一次上，
+   第二次只换中文槽位。
+2. **changenote 不分语言**：两次提交就会在「改动说明」留两条记录。脚本给第二条用
+   `--lang-changenote`（默认「（同步其他语言页面文案）」），想要别的文案就传参；
+   传空串会留一条无正文记录（删不掉，见 §7）。
+3. **UGC 查询读描述会被截到 256 字符**：所以 `dump` 的 en 正文取自 Web API，zh 正文走社区页
+   并把渲染后的 HTML 逆推回 BBCode（`page_to_bbcode`）；社区页 429 时才用 `--from-ugc` 兜底。
 
 ---
 
@@ -116,9 +187,12 @@ Steam 工坊描述框支持（够用即可，别用 Markdown，**不渲染**）�
 
 ### 2.4 中英双语怎么排
 
-- 一段中英并列容易乱读 → 推荐**上下分块**：中文整段在前，`[hr][/hr]`，英文整段在后；
-- 上传器的描述框**没有语言选项**，内容落 `english` 槽位（所有人都看得到）；
-  想给中文用户单独一份，只能上传后到网页把「语言」切到中文再贴一份（可选）；
+- **两个语言槽位分开写**：`workshop/en.txt` 只放英文，`workshop/zh.txt` 只放中文；
+  这样英文玩家看到纯英文页，中文玩家看到纯中文页（由 `workshop.py publish` 逐语言提交）；
+- 线上现状：`english` 槽位是纯英文，`schinese` 槽位曾把中英放在一段（`[hr][/hr]` 分隔）；
+  `dump` 会照抄线上，所以两个 txt 里到底放什么以线上为准，想拆干净就手动编辑后再发布；
+- 首发用 ModUploader 时它只能写 `english` 槽位 → 那时正文仍需中英并列一个块，
+  中文槽位用随后的 `workshop.py publish` 补上；
 - 英文用短句，避免中文式长句；专有名词（mod 名/角色名）保留原名。
 
 ### 2.5 截图（工坊页项目）
@@ -143,8 +217,10 @@ Steam 工坊描述框支持（够用即可，别用 Markdown，**不渲染**）�
 
 ### 2.7 定稿放哪
 
-- 正文定稿写进 `docs/mods/<mod>/publishing.md`（带 `[h1]`/`[list]` 原文，可直接复制）；
-- 上传器的描述框每次 Update 都会整体覆盖工坊描述，**以仓库里的定稿为准**。
+- **唯一来源**：`docs/mods/<mod>/workshop/{en,zh}.txt`（第 1 行标题 / 第 2 行空 / 其余正文）；
+- 想拿线上最新版本就用 `workshop.py dump` 拉回来（以线上为准），改完再 `publish` 推上去；
+- `publishing.md` 不再放正文（避免两处副本打架），只留条目信息、截图清单、Patch Notes、检查清单；
+- 脚本每次 Update 都会整体覆盖对应语言槽位，**以这两个 txt 为准**。
 
 ---
 
@@ -189,15 +265,29 @@ Steam 工坊描述框支持（够用即可，别用 Markdown，**不渲染**）�
 
 ## 4. 上传流程
 
+### 4.1 首发（只有一次，GUI）
+
 1. **关游戏**（工具要占用 AppID 322330 的 Steam 接口）；
 2. **先递增 `modinfo.version`**（`0.4.0` → `0.4.1`）。工坊标签 `version:x.y.z` 由它生成，
    不递增的话标签不刷新，玩家游戏内会一直提示「mod 过期」——**每次重新上传都要 +1**；
 3. 启动 `ModUploader.exe`；
-4. **Mod 列表里选中已发布条目**（不选 = 新建条目，见 §7）；
+4. **不选已有条目**（= 新建条目，见 §7）；
 5. 目录选 `D:\Code\MyMods\dst-mods\mods\<mod>`；
-6. 标题 → 粘 `docs/mods/<mod>/publishing.md` 里的正文 → Patch Notes（写这一版改了什么）；
+6. 标题 → 粘 `docs/mods/<mod>/workshop/en.txt` 的正文（中文槽位留给 §4.2 的脚本补）→ Patch Notes；
 7. Upload；
-8. 用 Web API 校验（§6），再回网页补截图与语言槽位。
+8. 用 Web API / `workshop.py verify` 校验（§6），把条目 ID 回填到 `docs/mods/<mod>/publishing.md`，
+   再回网页补截图与语言槽位。
+
+### 4.2 更新（每次发版，脚本一条命令）
+
+1. **关游戏**（避免抢 Steam 接口；`workshop.py` 的 preflight 会拦）；
+2. 递增 `modinfo.version` + 同步 `docs/mods/<mod>/publishing.md` 的 Patch Notes（同一轮改完）；
+3. `python tools/common/workshop.py plan --mod mods/<mod> --item <ID>`：
+   看新标签里 `version:` 是不昁已变、分类标签是否保留、有无 preflight 警告；
+4. `python tools/common/workshop.py publish --mod mods/<mod> --item <ID> --changenote "v<x.y.z> — 一句话"`；
+5. 脚本末尾会自己调 Web API 回读（`title` / `tags` / `description` / `time_updated`），
+   确认标签已刷新且 **描述没被改动**；
+6. 如该版有新截图，去网页后台上传（脚本不管截图，`preview.jpg` 除外）。
 
 ---
 
@@ -220,7 +310,12 @@ Steam 工坊描述框支持（够用即可，别用 Markdown，**不渲染**）�
 
 ## 6. 校验上传结果
 
-用公开 Web API，**别刷社区页**（会 429，返回 12KB 错误壳，HTML 结构还随 A/B 变）：
+两条路，结果一样：脚本的 `verify` 子命令（或 `publish` 末尾自带的回读）与手写 curl。
+**别刷社区页**（会 429，返回 12KB 错误壳，HTML 结构还随 A/B 变）：
+
+```bash
+python tools/common/workshop.py verify --item <ID>
+```
 
 ```bash
 curl -s -X POST https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/ \
@@ -239,8 +334,15 @@ curl -s -X POST https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFil
 
 | 坑 | 症状 / 后果 | 处理 |
 |---|---|---|
+| **想用 steamcmd 刷标签** | VDF 没有 `tags` 键，上传成功但 `client_only_mod` / `version:` 都不变，游戏内提示 mod 过期 | 用 `tools/common/workshop.py`（ISteamUGC），见 §1.1 |
+| **把 `kvtags` 当标签用** | `kvtags` 只是后台元数据，页面不显示、不能筛选、DST 也不读 | 工坊可见标签只能通过 ISteamUGC 写 |
+| **Steam 登了别的号** | `StartItemUpdate` 失败或传错账号名下 | 发布账号先登 Steam 客户端（脚本不带密码，不存凭证） |
+| **一次提交想写两种语言** | 只有最后一次 `SetItemUpdateLanguage` 的语言生效，另一种静默丢失 | 双语分两次提交，用 `publish`（脚本已内置） |
+| **想直读中文文案** | UGC 查询的描述字段只回前 256 字符 | 用 `dump`（走社区页逆推 BBCode）拉全文 |
+| **网页上手改了描述** | 下次 `publish` 会整体覆盖回 `workshop/*.txt` | 改描述只改文件；网页改了就 `dump` 拉回本地再发 |
+| **`dump` 之后不核对** | 线上旧文案被当成新定稿写进仓库 | `dump` 后过一遍 `git diff`，确认是想要的那版 |
 | **不选条目** | 生成**新**工坊 ID，旧条目成孤儿 | 下拉里选中旧条目；误建的用工具 Delete 删（删掉的条目网页返回 500） |
-| **描述框覆盖** | 网页润色过的排版被打回 | 定稿以 `docs/mods/<mod>/publishing.md` 为准，整段重粘 |
+| **描述框覆盖** | 网页润色过的排版被打回 | 定稿以 `docs/mods/<mod>/workshop/*.txt` 为准 |
 | **描述框没有语言选项** | 内容落 `english` 槽位 | 中英并列放在一个正文里（§2.4），或上传后网页补中文槽位 |
 | **用了 Markdown** | 页面显示原始 `**粗体**` | 只用 §2.3 的 BBCode 子集 |
 | **介绍页写太细** | 没人看；改一次数值还要同步改文案 | 只留核心功能一句话，细节放 `features.md`（§2.2 规则 3） |
@@ -270,10 +372,10 @@ curl -s -X POST https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFil
 [ ] 资源都有 Asset 声明；日志无 "Invalid resource handle" / "variable … is not declared"
 [ ] modinfo 的 description / hover / 配置项文案与实际数值一致
 [ ] modinfo.version 已递增；介绍页 Patch Notes 与之对齐
-[ ] 介绍页标题/正文与 docs/mods/<mod>/publishing.md 定稿一致
+[ ] 介绍页标题/正文与 docs/mods/<mod>/workshop/{en,zh}.txt 一致（线上改过就先 dump 拉回）
 [ ] mod 目录里没有 README、调试 png、.scratch 残留
 [ ] 已提醒用户准备 mods/<mod>/preview.jpg（268×268 宣传图，上传器拿它当工坊预览图）
-[ ] 游戏已关闭 → 上传器 → 选中旧条目 → 粘描述 → Upload
-[ ] Web API 校验 title / tags / description / time_updated
-[ ] 网页补截图、语言槽位
+[ ] 游戏已关闭 → `workshop.py plan` 无警告 → `publish --changenote` → `verify --pages` 回读双语标签与文案
+[ ] 中英两个语言槽位都核对过（标题 + 正文）；改动说明没有第二条空记录
+[ ] 网页补截图、语言槽位（语言槽位现在由脚本写，只差截图）
 ```

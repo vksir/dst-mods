@@ -7,12 +7,14 @@ docs/mods/
 ├── common/                     通用（所有 mod 都适用）
 │   ├── development.md          开发指南：沙箱、Asset、图标/动画管线、动作、容器 UI、存档、调试、工具
 │   ├── testing.md              测试指南：验收硬性要求、报告模板、测试分层、环境手册、回归清单
-│   └── publishing.md           发布指南：ModUploader 流程、介绍页（工坊页）文案规范、标签、校验
-└── <mod>/                      每个 mod 四份
+│   └── publishing.md           发布指南：首发走 GUI / 更新走脚本（workshop.py）、介绍页文案规范、标签、校验
+└── <mod>/                      每个 mod 五份
     ├── features.md             功能说明（面向玩家：有哪些功能、怎么用；不含部署）
     ├── development.md          该 mod 的设计决策、代码结构、特有常量与踩坑
     ├── testing.md              该 mod 的断言项、验证矩阵、回归清单
-    └── publishing.md           该 mod 的工坊条目：标题、正文（中英双语 BBCode）、截图、更新日志
+    ├── publishing.md           该 mod 的工坊条目：标题、正文（中英双语 BBCode）、截图、更新日志
+    └── workshop/               机器读的双语文案：en.txt / zh.txt（第1行标题 / 第2行空 / 其余正文），
+                                `tools/common/workshop.py publish` 直接读它发布
 ```
 
 | mod | 文档 |

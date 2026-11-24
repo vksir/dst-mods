@@ -560,6 +560,35 @@ inst.components.named.nameformat = (GLOBAL.STRINGS.NAMES[string.upper(prefab)] o
 显示名走 `inst.displaynamefn`（保留"潮湿/破损"等形容词），不要覆盖 `GetDisplayName`。
 右键文案用 §6.3 挂在 `GLOBAL.ACTIONS.WRITE` 上（先存旧值，非本物品回落旧值）。
 
+### 6.9 动作会被"前置过滤器"整体挡掉（骑牛 / 搬重物 / 手持漂浮物）
+
+`Action(data)` 里有一组**能力开关**，默认全 `false`（`actions.lua:310-318`）。
+玩家处于对应状态时，`playeractionpicker` 会压一个过滤器，**只放行带该开关的动作**，
+其余动作在 `SortActionList` 里被丢掉（`playeractionpicker.lua:94`）——
+**悬停没提示、点了没反应，报错为零**，和 §6.2 的静默失效是同一类坑。
+
+| 状态 | 过滤器 | 需要的字段 | 优先级 |
+|---|---|---|---|
+| 骑着牛 | `rider_replica.lua` `MountedActionFilter` | `mount_valid = true` | `mounted` 20 |
+| 搬重物（雕像等） | `inventory_replica.lua` `HeavyLiftingActionFilter` | `encumbered_valid = true` | `heavylifting` 10 |
+| 手持漂浮物 | `inventory_replica.lua` `FloaterHeldActionFilter` | `floating_valid = true` | `floaterheld` 15 |
+
+```lua
+local MyAction = GLOBAL.Action({ rmb = true, mount_valid = true })  -- 骑牛也能用
+```
+
+- 过滤器作用在**所有**动作收集器上（`INVENTORY` / `USEITEM` / `SCENE` …），
+  不是只管场景动作；
+- 好了对表：`RUMMAGE` / `EAT` / `ADDFUEL` / `PICKUP` 这些都是 `mount_valid = true`，
+  而 `CAST_POCKETWATCH` 不是（原版骑乘时不能从物品栏施法）；
+- **顺手检查自己的组件动作有没有加骑乘判断**：原版 `componentactions.lua` 的
+  pocketwatch / writeable 等收集器里有显式
+  `not (doer.replica.rider and doer.replica.rider:IsRiding())`，抄原版时别只抄一半；
+- 只加状态真正需要的那个字段。比如钟表袋只需要 `mount_valid`——原版 `RUMMAGE` 也没有
+  `encumbered_valid`，加了就是和原版不一致的额外能力。
+
+**症状记忆点**："平时能开，骑上牛就关不掉""搬着雕像右键没反应"——先查这张表。
+
 ---
 
 ## 7. 容器与面板
@@ -801,6 +830,12 @@ end)
 - API：`TheSim:SetPersistentString(name, str, false)` / `TheSim:GetPersistentString(name, cb)`（异步）；
 - 落盘：`Documents\Klei\DoNotStarveTogether\<KleiID>\client_save\`；
 - 范本：`scripts/playerhistory.lua`（脏标记 + json + SavePersistentString）；
+- **异步读回前不要写盘**：`GetPersistentString` 回调前就 `SetPersistentString`，
+  会用内存里的默认值覆盖磁盘上已存的状态（典型：进世界时 `Inventory.OnLoad` 先触发写盘，
+  而开关/配置还没来得及读回）。做法：用 `persist_loaded_key` 一类门闩，读回后统一 Flush；
+  跨 shard/换世界会重读同一个文件时，“正在读盘”期间也要禁止写；
+- 用户可能在读回前操作 UI（如按开关）：记下“读盘发起时的状态”或“操作对应的文件名”，
+  回调时不要用磁盘旧值覆盖用户刚做的操作；
 - 客户端可用标识：`TheNet:GetServerName()`、`TheNet:GetUserID()`、`TheWorld:HasTag("cave")`；
   **`TheWorld.meta.session_identifier` 客户端拿不到**（meta 是 master-sim 组件）。
 

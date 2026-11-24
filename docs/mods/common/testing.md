@@ -206,6 +206,10 @@ ThePlayer:SetInvincible(true)
 | **不校验焦点就发键** | 按键进游戏当快捷键，弹出各种面板污染状态 | 用 `gameinput.py`（内置校验）或 `dstconsole.py` |
 | **看截图认物品** | 把原版物品当自己的 | 先 L1 断言 prefab，再截图 |
 | **测试窗口是独享资源** | 多个 agent 同时操作 → 互相踩 | 同一时刻只允许一个测试者（其它 worker 只写代码） |
+| **存档 modoverrides 指向工坊 id** | 仓库里改了代码，进游戏却“没生效”（跑的是工坊旧版） | 宿主进世界时客户端会**重写** `modoverrides.lua`（把你手改的本地 mod 名改回 workshop id）→ 要么在“模组”界面切成本地 mod，要么临时把 `steamapps/workshop/content/322330/<id>` 换成本仓库代码（原名备份 + `.e2ebak`，测完还原） |
+| **不知道控制台开没开** | ESC 想关控制台却弹出暂停菜单 | 实测：回车执行**成功**时控制台会自己关，**报错时**才留着；别盲按 ESC，截图看一眼 |
+| **控制台里改的 ACTIONS 只改了一半** | 红/绿对照时客户端 tooltip 仍显示旧文案 | 宿主 VM 与真客户端是两份动作表；改字段做对照只能用服务端行为断言，并注明差异 |
+| **角色是幽灵（寿命/饥饿）** | 动作列表里只剩 `LOOKAT`，啥都点不了 | `player_common_extensions.lua` 的 ghost 过滤器（优先级 99）只放行 `ghost_exclusive`；先 `PushEvent("respawnfromghost")` 再测 |
 
 ## 6. 每轮回归清单
 
