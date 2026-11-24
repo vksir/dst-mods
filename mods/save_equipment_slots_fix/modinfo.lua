@@ -5,15 +5,15 @@ description =
   "修改自 dani 的 Save Equipment Slots，原 mod：https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686\n" ..
   "\n" ..
   "改动说明：\n" ..
-  "1、槽位配置重上游戏、上下洞穴不再丢失。\n" ..
+  "1、槽位配置与暂停开关状态(Ctrl + V)重上游戏、上下洞穴不再丢失。\n" ..
   "2、些许默认配置调整。特别地，默认开关快捷键变更为 Ctrl + V。\n" ..
   "\n" ..
   "Modified from dani's Save Equipment Slots. Original mod: https://steamcommunity.com/sharedfiles/filedetails/?id=1598084686\n" ..
   "Changes:\n" ..
-  "1. Slot configurations no longer get lost when reloading the game or entering/exiting caves.\n" ..
+  "1. Slot configurations and the pause toggle state (Ctrl + V) no longer get lost when reloading the game or entering/exiting caves.\n" ..
   "2. Minor adjustments to the default configuration. In particular, the default toggle shortcut has been changed to Ctrl + V."
 author = "Villkiss (Original author: dani)"
-version = "0.1.1"
+version = "0.1.2"
 forumthread = ""
 api_version = 6
 api_version_dst = 10
@@ -138,8 +138,10 @@ configuration_options =
   {
     name = "save_slots_initial_state",
     label = "Save Slots Initial State 初始开关状态",
-    hover = "槽位保存功能的初始状态，仅在配置了暂停快捷键时生效。\n" ..
-            "The initial state of the Save Slots behavior. Only used when a toggle key is configured.",
+    hover = "当服务器还没有保存过开关状态时，槽位保存功能的初始状态。开关状态会随存档保存，\n" ..
+            "之后的上下洞穴/重登沿用上次状态。仅在配置了暂停快捷键时生效。\n" ..
+            "The initial state of the Save Slots behavior, used only on servers that have no saved toggle yet.\n" ..
+            "The toggle state is saved with the world afterwards. Only used when a toggle key is configured.",
 
     options = {
       { description = "On 开", data = true },

@@ -13,7 +13,7 @@
 |---|---|
 | 槽位记忆 | `SaveSlot` / `ClearSlot` / `GetSlot` / `ReserveSavedSlots` / `TrySkipSavedSlots` / `Inventory_GetNextAvailableSlot` / `Inventory_Equip` / `Player_OnEquip` |
 | 图标子系统 | `GetAtlasAndImage` 系列、`MaybeSetAtlasAndImageCache`、`FindLiveItem`、`BuildHashTexLookup` / `UnhashTex`、`CreateImageButton` / `RefreshIconButtonIfAny` / `ScheduleIconHeal` / `ResyncIconsFromLiveItems` |
-| 本地持久化 | `PERSIST_FILE_PREFIX = "ses_fix_slots_"`（槽位配置）、`ICON_STORE_FILE = "ses_fix_icon_cache"`（图标引用） |
+| 本地持久化 | `PERSIST_FILE_PREFIX = "ses_fix_slots_"`（槽位配置 + 暂停开关状态）、`ICON_STORE_FILE = "ses_fix_icon_cache"`（图标引用） |
 
 ## 2. 核心改动：跨 shard 本地持久化
 
@@ -35,19 +35,47 @@
 ```
 
 - 文件按**服务器（集群）**维度命名 → 同一世界的地表/洞穴读写同一份；
-- Master / Client 两种模式下配置变更都写回（`SaveSlot` / `ClearSlot` / `SaveCurrentItemSlots` /
+- 文件内容：`{ version, items, disable_save_slots }`（开关字段可缺省，见 §2.3）；
+- Master / Client 两种模式下配置变更都写回（`SaveSlot` / `ClearSlot` / `ToggleDisableSaveSlots` /
   `Inventory:OnLoad` 四处挂钩）；
 - 加载优先级：**世界存档（`Inventory.OnLoad`）> 持久化文件**；文件不存在时不重算，
   槽位配置由拾取物品时自然学习；
 - client 模式从文件恢复后，用当前背包物品补充图标缓存并重画槽位图标。
 
-### 2.3 效果
+### 2.3 暂停开关状态（Ctrl + V）跟随存档
+
+需求：开关不是「每次进世界回到配置默认」，而是与槽位配置一样跟随存档
+（地表关掉 → 下洞穴仍关；重进世界仍关）。
+
+**做法**：开关和槽位配置存同一份文件（同一个 `GetPersistFilename()` 键，按服务器命名），
+用户切换时立即 `FlushPersistedSlots()` 落盘，进入世界时在 `LoadPersistedSlots` 回调里恢复。
+仅当「暂停保存快捷键」配置为某个键时才读写该字段（设为「无」时开关不可变，
+语义等同于始终开启，不写盘也不读盘）。
+
+两个必须处理的时序坑：
+
+1. **写盘早于读回**：进世界瞬间 `Inventory.OnLoad` 会触发 `FlushPersistedSlots()`，
+   此时内存里的开关还是配置默认值，直接写盘会把文件里已存的开关覆盖掉。
+   修法：新增 `state.persist_loaded_key` 门闩，**当前文件名未读回前 `FlushPersistedSlots` 直接返回**；
+   跨 shard 时会重读文件，读盘期间由 `state.persist_reading_key` 同样禁止写盘
+   （否则可能先写新值、再被读到的旧值覆盖）。
+   `LoadPersistedSlots` 回调末尾一定会再 Flush 一次，挂起期间的最新状态不会丢。
+2. **异步读回晚于用户操作**：用户进世界后极短时间内就按了 Ctrl + V，之后文件才读回来。
+   修法：文件未读回时的切换会把 `state.disable_save_slots_override_key` 记为当前文件名，
+   该文件的读回调到达时就不再应用文件值（用户这次操作优先），然后照常 Flush 写回并清除该标记。
+   文件**已读回**后的切换会立即落盘，不需要标记，也就不会影响同一个进程里后续进入的其他世界。
+
+旧版本文件没有 `disable_save_slots` 字段（`PERSIST_VERSION` 不变，按字段类型判断）
+→ 保持配置里的「初始开关状态」，首次 Flush 后补上该字段。
+
+### 2.4 效果
 
 | 场景 | 原版 | 修复版 |
 |---|---|---|
 | 下洞穴 | 丢失 | 保留 |
 | 重登 / 重启（自开世界） | 保留（世界存档） | 保留（双保险） |
 | 纯客户端连服务器 + 重登 | 丢失 | 保留（本机文件） |
+| 开关状态（Ctrl + V）的上下洞穴 / 重登 | 回到配置默认 | 保留（同一份本机文件） |
 | 槽位图标（含皮肤）重登后 | 方块/丢失 | 正常（推断 + 图标磁盘缓存 + hash 反解） |
 | 换电脑 | — | ✗ 不跟随 |
 
@@ -151,6 +179,16 @@ inventoryimages 也未加载（全部返回 false）。
 ## 5. 已知限制 / 不修的项
 
 - 配置存本机，换电脑不跟随（要跟随需改造成 server mod）；
-- 文件名取自服务器名：同一集群地表/洞穴对外名称不一致时退化为各自记忆；多个同名世界会互相覆盖；
+- 文件名取自服务器名：同一集群地表/洞穴对外名称不一致时退化为各自记忆；多个同名世界会互相覆盖
+  （槽位配置与开关状态都受影响）；
+- **持久化文件名实测是 `ses_fix_slots_unknown`**（本机 `client_save` 里只有这一个文件）：
+  说明 `GetPersistFilename()` 的 key 落了 `unknown` 兜底。两个待验证的候选原因：
+  ① `TheNet:GetServerName()` 在 `InitInventory` 时为空（纯客户端？）；
+  ② 名字是中文时被 `gsub("%W", "")` 全部剔除（本机集群名均为中文）。
+  无论哪个原因，后果都是**跨世界共用一份配置**（开关也会串世界），待 E2E 时用控制台打印
+  `TheNet:GetServerName()` 确认；修法候选：保留 Unicode 字符、只剔除路径非法字符，
+  或改用 `TheNet:GetSessionIdentifier()` 作键（改键需要旧文件迁移 + 重跑跨 shard/重登验证）；
+- 把「暂停保存快捷键」改成「无」后不再读写持久化里的开关字段，等于强制开启；再改回某个键时
+  沿用文件里上一次的开关；
 - `state.client_processed` 会话内缓慢累积（每条几十字节，重登清零）；
 - 客户端模式 `fn.Lock()` 若回调链中途抛错会泄漏锁（mod 静默失效直到重登，不崩溃）。

@@ -101,6 +101,20 @@ local state = {
   -- Whether or not saving slots is currently disabled
   disable_save_slots = false,
 
+  -- [本地修改] 文件尚未读回时用户手动切换开关所对应的持久化文件名。
+  -- 该文件的读回调到达时不应用文件里的旧值(用户本次操作优先)；
+  -- 读回完成即清除。文件已读回后的切换会立即落盘，不需要这个标记
+  disable_save_slots_override_key = nil,
+
+  -- [本地修改] 已读回的持久化文件名。
+  -- 读回前(或切换到另一个世界/文件名时)禁止写盘：
+  -- 进世界瞬间的 Inventory.OnLoad 会用配置默认开关覆盖文件里已存的状态
+  persist_loaded_key = nil,
+
+  -- [本地修改] 正在读取的持久化文件名(跨 shard 时会重读)。
+  -- 读盘期间写盘会把“读到的旧值”与“还没读完的新值”搅在一起，一律挂起到回调后 Flush
+  persist_reading_key = nil,
+
   -- Text widget to display current status of Disable Save Slots option
   disable_save_slots_text_widget = nil,
 
@@ -1335,13 +1349,33 @@ function fn.FlushPersistedSlots()
     return
   end
 
-  local ok, encoded = pcall(json.encode, {
+  local filename = GetPersistFilename()
+
+  -- [本地修改] 文件还没读回来时先不写：此时 state 里的开关还是配置默认值，
+  -- 写盘会把文件里已存的状态(以及槽位配置)覆盖掉。
+  -- 正在重读(跨 shard)时也不写：否则可能先写新值、再被读到的旧值覆盖。
+  -- LoadPersistedSlots 回调里一定会再 Flush 一次，所以这里直接丢弃即可，
+  -- 挂起期间的最新状态不会丢。
+  if  state.persist_loaded_key ~= filename or
+      state.persist_reading_key == filename then
+    return
+  end
+
+  local payload = {
     version = PERSIST_VERSION,
     items = state.items,
-  })
+  }
+
+  -- [本地修改] 开关状态跟随存档：仅当配置了暂停快捷键时才持久化
+  -- (快捷键设为「无」时开关不可变，语义等同于始终开启，不写盘)
+  if state.config.disable_save_slots_toggle then
+    payload.disable_save_slots = state.disable_save_slots
+  end
+
+  local ok, encoded = pcall(json.encode, payload)
 
   if ok and encoded then
-    TheSim:SetPersistentString(GetPersistFilename(), encoded, false)
+    TheSim:SetPersistentString(filename, encoded, false)
   end
 end
 
@@ -1392,18 +1426,37 @@ function fn.LoadPersistedSlots()
     return
   end
 
-  TheSim:GetPersistentString(GetPersistFilename(), function(success, str)
+  local filename = GetPersistFilename()
+  state.persist_reading_key = filename
+
+  TheSim:GetPersistentString(filename, function(success, str)
     -- 解析文件，把 json 的字符串键还原为数字槽位
-    local file_items = nil
+    local decoded = nil
     if success and str and #str > 0 then
-      local ok, decoded = pcall(json.decode, str)
-      if ok and type(decoded) == "table" and decoded.version == PERSIST_VERSION and type(decoded.items) == "table" then
-        file_items = {}
-        for slot, prefabs in pairs(decoded.items) do
-          local num_slot = tonumber(slot)
-          if num_slot and type(prefabs) == "table" then
-            file_items[num_slot] = prefabs
-          end
+      local ok, value = pcall(json.decode, str)
+      if ok and type(value) == "table" and value.version == PERSIST_VERSION then
+        decoded = value
+      end
+    end
+
+    -- [本地修改] 开关状态跟随存档：恢复上次的开关(上下洞穴/重登保持)。
+    -- 旧版本文件没有该字段 → 保持配置里的初始开关状态；
+    -- 文件读回前用户已手动切换过 → 不被文件里的旧值覆盖。
+    local user_toggled_first =
+      state.disable_save_slots_override_key == filename
+    if  state.config.disable_save_slots_toggle and
+        not user_toggled_first and
+        decoded and type(decoded.disable_save_slots) == "boolean" then
+      state.disable_save_slots = decoded.disable_save_slots
+    end
+
+    local file_items = nil
+    if decoded and type(decoded.items) == "table" then
+      file_items = {}
+      for slot, prefabs in pairs(decoded.items) do
+        local num_slot = tonumber(slot)
+        if num_slot and type(prefabs) == "table" then
+          file_items[num_slot] = prefabs
         end
       end
     end
@@ -1432,7 +1485,15 @@ function fn.LoadPersistedSlots()
       end
     end
 
-    -- 无论是否应用，都把当前配置同步回文件，供其他 shard/下次登录读取
+    -- 无论是否应用，都把当前配置同步回文件，供其他 shard/下次登录读取。
+    -- [本地修改] 先标记该文件名已读回再 Flush：Flush 在读回前/读盘中是空操作
+    state.persist_loaded_key = filename
+    if state.persist_reading_key == filename then
+      state.persist_reading_key = nil
+    end
+    if state.disable_save_slots_override_key == filename then
+      state.disable_save_slots_override_key = nil
+    end
     fn.FlushPersistedSlots()
   end)
 end
@@ -2463,6 +2524,18 @@ end
 function fn.ToggleDisableSaveSlots()
   state.disable_save_slots = not state.disable_save_slots
   fn.ShowDisableStatusText(3)
+
+  -- [本地修改] 文件还没读回/正在重读时，记下这次操作属于哪个文件，
+  -- 等读回调到达时不让旧值覆盖用户这次操作
+  local filename = GetPersistFilename()
+  if  state.persist_loaded_key ~= filename or
+      state.persist_reading_key == filename then
+    state.disable_save_slots_override_key = filename
+  end
+
+  -- [本地修改] 开关状态跟随存档：立即落盘，跨 shard(地表↔洞穴)与重登都能恢复。
+  -- 若文件尚未读回，Flush 会跳过，由 LoadPersistedSlots 回调补写
+  fn.FlushPersistedSlots()
 end
 
 function fn.InitPlayerHud()
