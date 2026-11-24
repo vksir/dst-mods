@@ -341,6 +341,7 @@ curl -s -X POST https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFil
 | **想直读中文文案** | UGC 查询的描述字段只回前 256 字符 | 用 `dump`（走社区页逆推 BBCode）拉全文 |
 | **网页上手改了描述** | 下次 `publish` 会整体覆盖回 `workshop/*.txt` | 改描述只改文件；网页改了就 `dump` 拉回本地再发 |
 | **`dump` 之后不核对** | 线上旧文案被当成新定稿写进仓库 | `dump` 后过一遍 `git diff`，确认是想要的那版 |
+| **`dump` 出来的链接带 `[url=…]`/`linkfilter`** | 社区页会把裸链接渲染成 `<a>`，逆推后多出 `[url=https://steamcommunity.com/linkfilter/?u=…]` | 转换噪声，不影响渲染；把裸链接手写回去更干净 |
 | **不选条目** | 生成**新**工坊 ID，旧条目成孤儿 | 下拉里选中旧条目；误建的用工具 Delete 删（删掉的条目网页返回 500） |
 | **描述框覆盖** | 网页润色过的排版被打回 | 定稿以 `docs/mods/<mod>/workshop/*.txt` 为准 |
 | **描述框没有语言选项** | 内容落 `english` 槽位 | 中英并列放在一个正文里（§2.4），或上传后网页补中文槽位 |
