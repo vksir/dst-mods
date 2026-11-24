@@ -612,6 +612,9 @@ def cmd_dump(args):
 
 def cmd_publish(args):
     plan = build_plan(args)
+    if args.copy_only:
+        # 只改文案：内容与标签不动，所以「版本没递增」不再算问题
+        plan["warnings"] = [w for w in plan["warnings"] if not w.startswith("版本标签没变化")]
     print(json.dumps({k: plan[k] for k in ("mod", "item", "new_tags", "copy", "warnings")},
                      ensure_ascii=False, indent=2))
     if plan["warnings"] and not args.force:
@@ -624,13 +627,21 @@ def cmd_publish(args):
     copy = load_copy(args.copy_dir or copy_dir_for(plan["mod"]))
     if args.no_copy:
         copy = {}
+    if args.langs:
+        keep = [s.strip() for s in args.langs.split(",") if s.strip()]
+        unknown = [k for k in keep if k not in dict(COPY_LANGS)]
+        if unknown:
+            raise SystemExit(f"--langs 只认 {', '.join(k for k, _ in COPY_LANGS)}，多了：{unknown}")
+        copy = {k: v for k, v in copy.items() if k in keep}
+    if args.copy_only and not copy:
+        raise SystemExit("--copy-only 需要 docs/mods/<mod>/workshop/{en,zh}.txt（或 --copy-dir）")
 
     if args.dry_run:
         print("[dry-run] 不提交。将要发送：")
         print(json.dumps({
-            "content": plan["mod"],
-            "preview": plan["preview"],
-            "tags": plan["new_tags"],
+            "content": None if args.copy_only else plan["mod"],
+            "preview": None if args.copy_only else plan["preview"],
+            "tags": None if args.copy_only else plan["new_tags"],
             "changenote": args.changenote,
             "languages": [
                 {"lang": cfg["lang"], "title": cfg["title"],
@@ -658,13 +669,32 @@ def cmd_publish(args):
                     lang=cfg["lang"],
                     title=cfg["title"],
                     description=cfg["description"],
-                    tags=plan["new_tags"] if first else None,
-                    content=plan["mod"] if first else None,
-                    preview=plan["preview"] if first else None,
+                    # 只改文案时不动内容/标签/预览图
+                    tags=None if args.copy_only else (plan["new_tags"] if first else None),
+                    content=None if args.copy_only else (plan["mod"] if first else None),
+                    preview=None if args.copy_only else (plan["preview"] if first else None),
                     changenote=note,
                 )
     finally:
         ugc.shutdown()
+
+    if args.copy_only:
+        # 只改文案：核对 english 槽位与本地文件一致（中文槽位需人工看社区页）
+        want = copy.get("en", {}).get("description")
+        got_desc, ok = None, not want
+        for attempt in range(20):
+            time.sleep(6)
+            got_desc = (web_item(args.item).get("description") or "")
+            if not want or got_desc.replace("\r\n", "\n").strip() == want.strip():
+                ok = True
+                break
+            print(f"  [等待落库 {attempt + 1}/20] english 槽位还差一点…")
+        out = {"mode": "copy-only", "english_matches_local": ok,
+               "web_api_english": web_item(args.item)}
+        if args.pages:
+            out["community_page"] = {lang: community_page(args.item, lang) for _, lang in COPY_LANGS}
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        return 0 if ok else 1
 
     # 回读校验：工坊侧落库有延迟（实测 1~2 分钟），盯 tags 是否变成预期值
     expected = plan["new_tags"]
@@ -728,6 +758,9 @@ def main(argv=None):
                     help="第二种语言那次提交用的改动说明（Steam 的 changenote 不分语言，"
                          "两次提交会各留一条）")
     sp.add_argument("--no-copy", action="store_true", help="本次不碰标题与描述")
+    sp.add_argument("--copy-only", action="store_true",
+                    help="只同步标题与描述（不动内容/标签/预览图，也不要求升版本）")
+    sp.add_argument("--langs", help="只提交指定语言，例如 zh 或 en,zh（默认全部）")
     sp.add_argument("--force", action="store_true", help="忽略 preflight 警告")
     sp.add_argument("--dry-run", action="store_true", help="只打印计划")
     sp.add_argument("--pages", action="store_true", help="提交后用社区页核对双语文案")

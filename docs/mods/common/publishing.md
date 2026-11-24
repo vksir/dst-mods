@@ -187,12 +187,11 @@ Steam 工坊描述框支持（够用即可，别用 Markdown，**不渲染**）�
 
 ### 2.4 中英双语怎么排
 
-- **两个语言槽位分开写**：`workshop/en.txt` 只放英文，`workshop/zh.txt` 只放中文；
-  这样英文玩家看到纯英文页，中文玩家看到纯中文页（由 `workshop.py publish` 逐语言提交）；
-- 线上现状：`english` 槽位是纯英文，`schinese` 槽位曾把中英放在一段（`[hr][/hr]` 分隔）；
-  `dump` 会照抄线上，所以两个 txt 里到底放什么以线上为准，想拆干净就手动编辑后再发布；
-- 首发用 ModUploader 时它只能写 `english` 槽位 → 那时正文仍需中英并列一个块，
-  中文槽位用随后的 `workshop.py publish` 补上；
+- **两个槽位各写各的语言，不要混排**：`workshop/zh.txt` **只写中文**，`workshop/en.txt` 只写英文。
+  早期为了省事在中文槽位里放了「中文 + `[hr][/hr]` + 英文」，现在没必要（2026-11-24 已拆开）；
+  英文玩家看 english 槽位，中文玩家看 schinese 槽位，混排只会让两边都多出一段看不懂的文本；
+- 标题同理：中文标题可以带英文 mod 名（`旺达位面计划（Wanda Planar Plan）`），但描述正文只用中文；
+- `dump` 会照抄线上现状，所以拉回来之后要自己确认没有混排（`grep -E '[A-Za-z]{20,}' workshop/zh.txt` 能快速兜一遍）；
 - 英文用短句，避免中文式长句；专有名词（mod 名/角色名）保留原名。
 
 ### 2.5 截图（工坊页项目）
@@ -283,11 +282,23 @@ Steam 工坊描述框支持（够用即可，别用 Markdown，**不渲染**）�
 1. **关游戏**（避免抢 Steam 接口；`workshop.py` 的 preflight 会拦）；
 2. 递增 `modinfo.version` + 同步 `docs/mods/<mod>/publishing.md` 的 Patch Notes（同一轮改完）；
 3. `python tools/common/workshop.py plan --mod mods/<mod> --item <ID>`：
-   看新标签里 `version:` 是不昁已变、分类标签是否保留、有无 preflight 警告；
+   看新标签里 `version:` 是否已变、分类标签是否保留、有无 preflight 警告；
 4. `python tools/common/workshop.py publish --mod mods/<mod> --item <ID> --changenote "v<x.y.z> — 一句话"`；
-5. 脚本末尾会自己调 Web API 回读（`title` / `tags` / `description` / `time_updated`），
-   确认标签已刷新且 **描述没被改动**；
+5. 脚本末尾会自己回读工坊侧 `tags` 到预期值才算成功（落库有 1~2 分钟延迟），并打印 Web API 结果；
 6. 如该版有新截图，去网页后台上传（脚本不管截图，`preview.jpg` 除外）。
+
+### 4.3 只想改文案（不升版本）
+
+文案改动不需要动内容，也不需要递增 `modinfo.version`：
+
+```bash
+python tools/common/workshop.py publish --mod mods/<mod> --item <ID>         --changenote "文案：中文页面只保留中文" --copy-only --langs zh
+```
+
+- `--copy-only`：不提交内容/标签/预览图，只写语言槽位，也不再因为「版本没递增」拦你；
+- `--langs zh`：只提交中文槽位（避免给 english 槽位留下一条内容没变的改动记录）；
+- 校验：`--copy-only` 模式下会核对 english 槽位与 `workshop/en.txt` 是否一致；
+  中文槽位的内容级核对要读社区页（`page_to_bbcode`），频繁请求会被 429，隔几分钟再抓。
 
 ---
 

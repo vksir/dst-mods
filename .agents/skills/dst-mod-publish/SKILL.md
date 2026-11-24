@@ -31,6 +31,10 @@ docs/mods/<mod>/workshop/en.txt     英文标题/正文
 ```
 
 格式固定三行规则：**第 1 行标题；第 2 行留空；第 3 行起是正文**（BBCode 子集，真换行，不要 Markdown）。
+
+**两个槽位各写各的语言**：`zh.txt` 只写中文（不要「中文 + [hr][/hr] + 英文」的混排），
+`en.txt` 只写英文。中文标题里带英文 mod 名可以（`旺达位面计划（Wanda Planar Plan）`），正文不行。
+
 `docs/mods/<mod>/publishing.md` 只留条目信息、截图清单、Patch Notes、检查清单——**不再放正文**。
 
 线上文案才是准的（用户可能直接在网页改过）。要把线上同步回本地：
@@ -65,7 +69,15 @@ python tools/common/workshop.py publish --mod mods/<mod> --item <ID> \
 ```
 
 脚本行为：内容 + 标签 + 预览图挂在第一次提交（english 文案一起），随后为中文槽位再提交一次。
-`--dry-run` 只看不发；`--no-copy` 只更内容不动文案。
+`--dry-run` 只看不发；`--no-copy` 只更内容不动文案；`--pages` 额外抽中英社区页核对。
+
+**只改文案（不升版本）**：
+
+```bash
+python tools/common/workshop.py publish --mod mods/<mod> --item <ID>         --changenote "文案：…" --copy-only --langs zh
+```
+
+`--copy-only` 不提交内容/标签/预览图、也不再拦「版本没递增」；`--langs zh` 只写中文槽位。
 
 ## 5. 校验（必须做）
 
